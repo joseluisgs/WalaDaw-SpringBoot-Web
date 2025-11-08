@@ -1,0 +1,145 @@
+package com.joseluisgs.walaspringboot.models;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import java.util.Objects;
+
+@Entity
+public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private long id;
+
+    @NotEmpty
+    private String nombre;
+
+    @Min(value=0, message="{producto.precio.mayorquecero}")
+    private float precio;
+
+    private String imagen;
+
+    @Column(length = 1000)
+    private String descripcion;
+
+    private String categoria;
+
+    @ManyToOne
+    private User propietario;
+
+    @ManyToOne
+    private Purchase compra;
+
+    public Product() {
+    }
+
+    public Product(String nombre, float precio, String imagen, User propietario) {
+        this.nombre = nombre;
+        this.precio = precio;
+        this.imagen = imagen;
+        this.propietario = propietario;
+    }
+
+    public Product(String nombre, float precio, String imagen, String descripcion, String categoria, User propietario) {
+        this.nombre = nombre;
+        this.precio = precio;
+        this.imagen = imagen;
+        this.descripcion = descripcion;
+        this.categoria = categoria;
+        this.propietario = propietario;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public float getPrecio() {
+        return precio;
+    }
+
+    public void setPrecio(float precio) {
+        this.precio = precio;
+    }
+
+    public String getImagen() {
+        return imagen;
+    }
+
+    public void setImagen(String imagen) {
+        this.imagen = imagen;
+    }
+
+    public User getPropietario() {
+        return propietario;
+    }
+
+    public void setPropietario(User propietario) {
+        this.propietario = propietario;
+    }
+
+    public Purchase getCompra() {
+        return compra;
+    }
+
+    public void setCompra(Purchase compra) {
+        this.compra = compra;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product producto = (Product) o;
+        return id == producto.id &&
+                Float.compare(producto.precio, precio) == 0 &&
+                Objects.equals(nombre, producto.nombre) &&
+                Objects.equals(imagen, producto.imagen) &&
+                Objects.equals(propietario, producto.propietario) &&
+                Objects.equals(compra, producto.compra);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, nombre, precio, imagen, propietario, compra);
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", nombre='" + nombre + '\'' +
+                ", precio=" + precio +
+                ", imagen='" + imagen + '\'' +
+                ", propietario=" + propietario +
+                ", compra=" + compra +
+                '}';
+    }
+}
