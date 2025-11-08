@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+{% include "fragments/head.peb" %}
+
+<body class="d-flex flex-column min-vh-100">
+{% include "fragments/navbar.peb" %}
+
+{% include "fragments/carrusel.peb" %}
+
+<div class="container mb-5">
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for producto in productos %}
+        <div class="col">
+            <div class="card h-100 shadow-sm producto-card" onclick="window.location='/public/producto/{{ producto.id }}';" style="cursor: pointer;">
+                <img src="{% if producto.imagen is empty %}http://placehold.it/350x260{% else %}{{ producto.imagen }}{% endif %}" 
+                     class="card-img-top" alt="{{ producto.nombre }}" style="height: 300px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4 class="text-primary mb-0">{{ producto.precio }}€</h4>
+                        </div>
+                        {% if authenticated and username != producto.propietario.email %}
+                        <div class="col-md-6 text-end">
+                            <a href="/app/carrito/add/{{ producto.id }}" class="btn btn-success btn-sm" onclick="event.stopPropagation();">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% include "fragments/footer.peb" %}
+
+<!-- Bootstrap 5.3 JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+</body>
+</html>

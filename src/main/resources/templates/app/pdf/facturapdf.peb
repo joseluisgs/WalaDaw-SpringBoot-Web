@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Factura #{{ compra.id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .info { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        .total { text-align: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Factura #{{ compra.id }}</h1>
+        <p>Wala Spring Boot - Tienda de Segunda Mano</p>
+    </div>
+    
+    <div class="info">
+        <p><strong>Fecha:</strong> {{ compra.fechaCompra }}</p>
+        <p><strong>Comprador:</strong> {{ compra.propietario.nombre }} {{ compra.propietario.apellidos }}</p>
+        <p><strong>Email:</strong> {{ compra.propietario.email }}</p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Vendedor</th>
+                <th>Precio</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+            <tr>
+                <td>{{ producto.nombre }}</td>
+                <td>{{ producto.propietario.email }}</td>
+                <td>{{ producto.precio }}€</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" class="total">Total:</td>
+                <td><strong>{{ total }}€</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>

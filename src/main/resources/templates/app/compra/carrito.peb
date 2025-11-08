@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+{% include "fragments/head.peb" %}
+
+<body class="d-flex flex-column min-vh-100">
+{% include "fragments/navbar.peb" %}
+
+<div class="container mt-5 pt-5">
+    {% if carrito is null or carrito is empty %}
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-info text-center" role="alert">
+                <h2>Aún no ha seleccionado ningún producto para comprar</h2>
+                <a href="/" class="btn btn-primary mt-3">Ir a comprar</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="mb-4">Carrito de Compra</h2>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-center">Precio</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in carrito %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{% if producto.imagen is empty %}https://placehold.it/150x150?text=SIN%20IMAGEN{% else %}{{ producto.imagen }}{% endif %}" 
+                                         class="rounded me-3" style="width: 150px; height: 150px; object-fit: cover;" alt="{{ producto.nombre }}">
+                                    <div>
+                                        <h5>{{ producto.nombre }}</h5>
+                                        <p class="text-muted mb-0">de {{ producto.propietario.email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center align-middle">
+                                <h5 class="text-primary">{{ producto.precio }}€</h5>
+                            </td>
+                            <td class="text-center align-middle">
+                                <a href="/app/carrito/eliminar/{{ producto.id }}" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                            <td class="text-center"><h4 class="text-primary">{{ total }}€</h4></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <a href="/" class="btn btn-secondary">Seguir comprando</a>
+                <a href="/app/carrito/comprar" class="btn btn-success">Finalizar compra</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% include "fragments/footer.peb" %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

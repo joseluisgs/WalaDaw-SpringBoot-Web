@@ -1,0 +1,63 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <img src="/images/logo.png" alt="Logo" height="30" class="d-inline-block align-text-top">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Inicio</a>
+                </li>
+                {% if authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/app/misproductos">Mis Productos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/app/miscompras">Mis Compras</a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <form class="d-flex me-3" role="search">
+                <input class="form-control" type="search" placeholder="Buscar..." name="q" value="{{ q | default('') }}">
+            </form>
+            
+            <ul class="navbar-nav">
+                {% if authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/app/carrito">
+                        <span class="badge bg-danger">{{ items_carrito | default(0) }}</span>
+                        <i class="bi bi-cart"></i> Carrito
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        {{ username | default('Usuario') }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="javascript:document.getElementById('logoutForm').submit()">
+                                <i class="bi bi-box-arrow-right"></i> Salir
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/auth/login">
+                        <i class="bi bi-person"></i> Login
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{% if authenticated %}
+<form id="logoutForm" method="post" action="/auth/logout" style="display: none;">
+</form>
+{% endif %}
