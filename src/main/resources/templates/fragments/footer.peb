@@ -1,0 +1,13 @@
+<footer class="mt-auto py-3 bg-dark text-white-50">
+    <div class="container">
+        <div class="text-center">
+            <p class="mb-1">2019-2025 Implementación de Aplicaciones Web: 
+                <a href="https://twitter.com/joseluisgonsan" class="text-white-50">José Luis González Sánchez</a>
+            </p>
+            <p class="mb-1">
+                <a href="http://www.cifpvirgendegracia.com/" class="text-white-50">CIFP Virgen de Gracia</a>
+            </p>
+            <p class="mb-0">Paseo de San Gregorio 82b. 13500 Puertollano (Ciudad Real).</p>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+{% include "fragments/head.peb" %}
+
+<body class="d-flex flex-column min-vh-100">
+{% include "fragments/navbar.peb" %}
+
+<div class="container mt-5 pt-5">
+    <h2 class="mb-4">Mis Compras</h2>
+    
+    {% if miscompras is empty %}
+    <div class="alert alert-info text-center">
+        <p>No has realizado ninguna compra todavía.</p>
+        <a href="/" class="btn btn-primary mt-3">Ir a comprar</a>
+    </div>
+    {% else %}
+    <div class="row">
+        {% for compra in miscompras %}
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span>Compra #{{ compra.id }}</span>
+                    <span>Fecha: {{ compra.fechaCompra }}</span>
+                </div>
+                <div class="card-body">
+                    <a href="/app/compra/factura/{{ compra.id }}" class="btn btn-info btn-sm float-end">
+                        <i class="bi bi-file-earmark-pdf"></i> Ver Factura
+                    </a>
+                    <h5>Productos comprados:</h5>
+                    <ul class="list-group">
+                        {% for producto in productos %}
+                        {% if producto.compra.id == compra.id %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ producto.nombre }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ producto.precio }}€</span>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{% include "fragments/footer.peb" %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
