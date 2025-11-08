@@ -32,6 +32,7 @@
                             message('nav.user.management') }}</a></li>
                         <li><a class="dropdown-item" href="/admin/productos"><i class="bi bi-box-seam"></i> {{
                             message('nav.products') }}</a></li>
+                        <li><a class="dropdown-item" href="/admin/ventas"><i class="bi bi-cash-stack"></i> Ventas</a></li>
                     </ul>
                 </li>
                 {% endif %}
@@ -71,6 +72,14 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">{{ userRole | default('USER') }}</h6></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/app/perfil">
+                                <i class="bi bi-person"></i> Mi Perfil
+                            </a>
+                        </li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
