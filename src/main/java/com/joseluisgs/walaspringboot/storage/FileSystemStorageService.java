@@ -60,6 +60,8 @@ public class FileSystemStorageService implements StorageService{
         String filename = StringUtils.cleanPath(file.getOriginalFilename());
         String extension = StringUtils.getFilenameExtension(filename);
         String justFilename = filename.replace("."+extension, "");
+        // Security: remove any path separators from filename
+        justFilename = justFilename.replaceAll("[/\\\\]", "_");
         String storedFilename = System.currentTimeMillis() + "_" + justFilename + "." + extension;
         try {
             if (file.isEmpty()) {
