@@ -18,8 +18,13 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
+    final
     UserDetailsService userDetailsService;
+
+    @Autowired
+    public SecurityConfig(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -42,30 +47,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authenticationProvider(authenticationProvider())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/images/**", "/css/**", "/h2-console/**", "/public/**", "/auth/**", "/files/**").permitAll()
-                .requestMatchers("/admin/**").hasAuthority("ADMIN")
-                .requestMatchers("/moderador/**").hasAnyAuthority("ADMIN", "MODERATOR")
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/auth/login")
-                .defaultSuccessUrl("/public/index", true)
-                .loginProcessingUrl("/auth/login-post")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/auth/logout")
-                .logoutSuccessUrl("/public/index")
-                .permitAll()
-            )
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
-            )
-            .headers(headers -> headers
-                .frameOptions(frame -> frame.sameOrigin())
-            );
+                .authenticationProvider(authenticationProvider())
+                .authorizeHttpRequests(auth -> auth
+                        // ORDEN IMPORTANTE: específico primero
+                        .requestMatchers("/public", "/public/", "/public/**").permitAll()  // ← AÑADIR SIN /**
+                        .requestMatchers("/", "/images/**", "/css/**", "/js/**", "/static/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/auth/**", "/files/**").permitAll()
+                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/moderador/**").hasAnyAuthority("ADMIN", "MODERATOR")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/auth/login")
+                        .defaultSuccessUrl("/public", true)  // ← SIN /index
+                        .loginProcessingUrl("/auth/login-post")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessUrl("/public")  // ← SIN /index
+                        .permitAll()
+                )
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**")
+                )
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                );
 
         return http.build();
     }

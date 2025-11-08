@@ -39,7 +39,7 @@ dependencies {
     runtimeOnly("com.h2database:h2")
     
     // Spring Boot DevTools
-    // developmentOnly("org.springframework.boot:spring-boot-devtools")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
     
     // PDF Generation
     implementation("com.itextpdf:itextpdf:5.5.13.4")
@@ -54,22 +54,13 @@ tasks.withType<JavaCompile> {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
-    jvmArgs(
-        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-        "--add-opens", "java.base/java.util=ALL-UNNAMED"
-    )
+    useJUnitPlatform() // Usamos JUnit 5
+    // finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
 }
 
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    archiveFileName.set("walaspringboot.jar")
-}
-
-// Add JVM arguments for bootRun to fix JMX issues with Java 25
-tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    jvmArgs(
-        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-        "--add-opens", "java.base/java.util=ALL-UNNAMED",
-        "--add-opens", "java.management/sun.management=ALL-UNNAMED"
-    )
+tasks.test {
+    // Ponemos el perfil de test para que cargue el application-test.properties
+    // para ahorranos hacer esto
+    //./gradlew test -Pspring.profiles.active=dev
+    systemProperty("spring.profiles.active", project.findProperty("spring.profiles.active") ?: "dev")
 }
