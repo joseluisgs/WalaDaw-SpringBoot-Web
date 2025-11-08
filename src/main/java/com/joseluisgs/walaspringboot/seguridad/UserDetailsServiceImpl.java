@@ -3,8 +3,6 @@ package com.joseluisgs.walaspringboot.seguridad;
 import com.joseluisgs.walaspringboot.modelos.Usuario;
 import com.joseluisgs.walaspringboot.repositorios.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,18 +18,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Usuario usuario = repositorio.findFirstByEmail(username);
 
-        User.UserBuilder builder = null;
-
-        if (usuario != null) {
-            builder = User.withUsername(username);
-            builder.disabled(false);
-            builder.password(usuario.getPassword());
-            // Usar el rol del usuario de la base de datos
-            builder.authorities(new SimpleGrantedAuthority(usuario.getRol()));
-        } else {
+        if (usuario == null) {
             throw new UsernameNotFoundException("Usuario no encontrado");
         }
 
-        return builder.build();
+        return usuario;
     }
 }
