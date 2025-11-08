@@ -30,16 +30,117 @@
                     <div class="mb-3">
                         <h4 class="text-primary"><strong>{{ producto.precio | formatPrice }}</strong></h4>
                     </div>
+                    
+                    <!-- Rating Display -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            {% if averageRating > 0 %}
+                            <div class="text-warning me-2">
+                                {% for i in range(1, 6) %}
+                                    {% if i <= averageRating %}
+                                    <i class="bi bi-star-fill"></i>
+                                    {% elseif i - averageRating < 1 %}
+                                    <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                    <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="text-muted">{{ averageRating | number_format(1) }} ({{ ratingCount }} valoraciones)</span>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-star"></i> Sin valoraciones</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     {% if isAuthenticated and currentUser.email != producto.propietario.email %}
-                    <a class="btn btn-lg btn-success w-100" href="/app/carrito/add/{{ producto.id }}">
-                        <i class="bi bi-cart-plus"></i> Comprar
-                    </a>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-lg btn-success" href="/app/carrito/add/{{ producto.id }}">
+                            <i class="bi bi-cart-plus"></i> Comprar
+                        </a>
+                        <button class="btn btn-outline-danger" id="favoriteBtn" onclick="toggleFavorite({{ producto.id }})">
+                            <i class="bi bi-heart{% if isFavorite %}-fill{% endif %}" id="favoriteIcon"></i>
+                            <span id="favoriteText">{% if isFavorite %}Quitar de favoritos{% else %}Añadir a favoritos{% endif %}</span>
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
             </div>
+            
+            <!-- Rating Section -->
+            {% if isAuthenticated %}
+            <div class="row mt-5">
+                <div class="col-md-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bi bi-star"></i> Valoraciones</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Rating Form -->
+                            {% if currentUser.email != producto.propietario.email %}
+                            <div class="mb-4 p-3 bg-light rounded">
+                                <h6>Deja tu valoración:</h6>
+                                <form id="ratingForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Puntuación:</label>
+                                        <div class="rating-input">
+                                            <input type="radio" name="rating" id="star5" value="5">
+                                            <label for="star5"><i class="bi bi-star-fill"></i></label>
+                                            <input type="radio" name="rating" id="star4" value="4">
+                                            <label for="star4"><i class="bi bi-star-fill"></i></label>
+                                            <input type="radio" name="rating" id="star3" value="3">
+                                            <label for="star3"><i class="bi bi-star-fill"></i></label>
+                                            <input type="radio" name="rating" id="star2" value="2">
+                                            <label for="star2"><i class="bi bi-star-fill"></i></label>
+                                            <input type="radio" name="rating" id="star1" value="1">
+                                            <label for="star1"><i class="bi bi-star-fill"></i></label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="comentario" class="form-label">Comentario (opcional):</label>
+                                        <textarea class="form-control" id="comentario" rows="3" maxlength="500"></textarea>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="submitRating({{ producto.id }})">
+                                        Enviar valoración
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Ratings List -->
+                            <div id="ratingsList">
+                                <p class="text-muted">Cargando valoraciones...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+.rating-input input {
+    display: none;
+}
+.rating-input label {
+    cursor: pointer;
+    font-size: 2rem;
+    color: #ddd;
+    transition: color 0.2s;
+}
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input:checked ~ label {
+    color: #ffc107;
+}
+</style>
 
 {% include "fragments/footer" %}
 
@@ -47,6 +148,124 @@
 <script crossorigin="anonymous"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function toggleFavorite(productoId) {
+    const isFavorite = document.getElementById('favoriteIcon').classList.contains('bi-heart-fill');
+    const method = isFavorite ? 'DELETE' : 'POST';
+    const url = isFavorite ? `/app/favoritos/remove/${productoId}` : `/app/favoritos/add/${productoId}`;
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const icon = document.getElementById('favoriteIcon');
+            const text = document.getElementById('favoriteText');
+            
+            if (data.isFavorite) {
+                icon.classList.remove('bi-heart');
+                icon.classList.add('bi-heart-fill');
+                text.textContent = 'Quitar de favoritos';
+            } else {
+                icon.classList.remove('bi-heart-fill');
+                icon.classList.add('bi-heart');
+                text.textContent = 'Añadir a favoritos';
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al procesar la solicitud');
+    });
+}
+
+function submitRating(productoId) {
+    const rating = document.querySelector('input[name="rating"]:checked');
+    const comentario = document.getElementById('comentario').value;
+    
+    if (!rating) {
+        alert('Por favor, selecciona una puntuación');
+        return;
+    }
+    
+    const formData = new URLSearchParams();
+    formData.append('productoId', productoId);
+    formData.append('puntuacion', rating.value);
+    if (comentario) {
+        formData.append('comentario', comentario);
+    }
+    
+    fetch('/app/ratings/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Valoración añadida correctamente');
+            document.getElementById('ratingForm').reset();
+            loadRatings(productoId);
+            // Actualizar el promedio en la página
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar la valoración');
+    });
+}
+
+function loadRatings(productoId) {
+    fetch(`/app/ratings/producto/${productoId}`)
+    .then(response => response.json())
+    .then(data => {
+        const ratingsList = document.getElementById('ratingsList');
+        if (data.success && data.ratings && data.ratings.length > 0) {
+            let html = '';
+            data.ratings.forEach(rating => {
+                html += `
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="text-warning me-2">
+                                ${'<i class="bi bi-star-fill"></i>'.repeat(rating.puntuacion)}
+                                ${'<i class="bi bi-star"></i>'.repeat(5 - rating.puntuacion)}
+                            </div>
+                            <small class="text-muted">${rating.usuario ? rating.usuario.nombre : 'Usuario'}</small>
+                        </div>
+                        ${rating.comentario ? `<p class="mb-0">${rating.comentario}</p>` : ''}
+                    </div>
+                `;
+            });
+            ratingsList.innerHTML = html;
+        } else {
+            ratingsList.innerHTML = '<p class="text-muted">No hay valoraciones todavía.</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('ratingsList').innerHTML = '<p class="text-muted">Error al cargar valoraciones.</p>';
+    });
+}
+
+// Load ratings when page loads
+{% if isAuthenticated %}
+document.addEventListener('DOMContentLoaded', function() {
+    loadRatings({{ producto.id }});
+});
+{% endif %}
+</script>
 
 </body>
 </html>
