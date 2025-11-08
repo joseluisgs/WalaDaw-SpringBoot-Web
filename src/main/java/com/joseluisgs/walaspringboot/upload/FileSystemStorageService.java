@@ -9,7 +9,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -20,11 +24,31 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FileSystemStorageService implements StorageService{
 
+    private static final Logger logger = LoggerFactory.getLogger(FileSystemStorageService.class);
+
 	private final Path rootLocation;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @Autowired
     public FileSystemStorageService(StorageProperties properties) {
         this.rootLocation = Paths.get(properties.getLocation());
+    }
+
+    @PostConstruct
+    public void initializeStorage() {
+        if ("dev".equals(activeProfile)) {
+            logger.info("Perfil DEV: Limpiando directorio de uploads al iniciar");
+            deleteAll();
+            init();
+        } else {
+            logger.info("Perfil PROD: Verificando existencia del directorio de uploads");
+            if (!Files.exists(rootLocation)) {
+                logger.info("Directorio no existe, creando...");
+                init();
+            }
+        }
     }
 
     @Override

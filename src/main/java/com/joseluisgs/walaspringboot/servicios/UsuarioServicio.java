@@ -32,4 +32,9 @@ public class UsuarioServicio {
     public Usuario buscarPorEmail(String email) {
         return repositorio.findFirstByEmail(email);
     }
+
+    @Cacheable(value = "usuarios")
+    public java.util.List<Usuario> findAll() {
+        return repositorio.findAll();
+    }
 }

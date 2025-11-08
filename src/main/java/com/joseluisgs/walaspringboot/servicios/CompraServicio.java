@@ -50,4 +50,9 @@ public class CompraServicio {
     public List<Compra> porPropietario(Usuario u) {
         return repositorio.findByPropietario(u);
     }
+
+    @Cacheable(value = "compras")
+    public List<Compra> findAll() {
+        return repositorio.findAll();
+    }
 }

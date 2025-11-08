@@ -19,6 +19,11 @@ public class Producto {
 
     private String imagen;
 
+    @Column(length = 1000)
+    private String descripcion;
+
+    private String categoria;
+
     @ManyToOne
     private Usuario propietario;
 
@@ -32,6 +37,15 @@ public class Producto {
         this.nombre = nombre;
         this.precio = precio;
         this.imagen = imagen;
+        this.propietario = propietario;
+    }
+
+    public Producto(String nombre, float precio, String imagen, String descripcion, String categoria, Usuario propietario) {
+        this.nombre = nombre;
+        this.precio = precio;
+        this.imagen = imagen;
+        this.descripcion = descripcion;
+        this.categoria = categoria;
         this.propietario = propietario;
     }
 
@@ -81,6 +95,22 @@ public class Producto {
 
     public void setCompra(Compra compra) {
         this.compra = compra;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
     }
 
     @Override

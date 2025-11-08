@@ -28,36 +28,48 @@ public class WalaSpringBootApplication {
     @Bean
     public CommandLineRunner initData(UsuarioServicio usuarioServicio, ProductoServicio productoServicio) {
         return args -> {
-            Usuario usuario = new Usuario("Prueba", "Probando Mucho", null, "prueba@prueba.com", "prueba");
+            // Crear usuarios con diferentes roles
+            Usuario admin = new Usuario("Admin", "Administrador", null, "admin@walaspringboot.com", "admin", "ADMIN");
+            admin = usuarioServicio.registrar(admin);
+
+            Usuario usuario = new Usuario("Prueba", "Probando Mucho", null, "prueba@prueba.com", "prueba", "USER");
             usuario = usuarioServicio.registrar(usuario);
 
-            Usuario usuario2 = new Usuario("Otro", "Usuario", null, "otro@otro.com", "otro");
+            Usuario moderador = new Usuario("Moderador", "Usuario", null, "moderador@walaspringboot.com", "moderador", "MODERATOR");
+            moderador = usuarioServicio.registrar(moderador);
+
+            Usuario usuario2 = new Usuario("Otro", "Usuario", null, "otro@otro.com", "otro", "USER");
             usuario2 = usuarioServicio.registrar(usuario2);
 
+            // Productos actualizados 2024-2025
             List<Producto> listado = Arrays.asList(
-                new Producto("Bicicleta de montaña", 100.0f,
-                    "https://sgfm.elcorteingles.es/SGFM/dctm/MEDIA03/201809/20/00108451997269____4__640x640.jpg", usuario),
-                new Producto("Golf GTI Serie 2", 2500.0f,
-                    "https://www.minicar.es/large/Volkswagen-Golf-GTi-G60-Serie-II-%281990%29-Norev-1%3A18-i22889.jpg", usuario),
-                new Producto("Raqueta de tenis", 10.5f, 
-                    "https://imgredirect.milanuncios.com/fg/2311/04/tenis/Raqueta-tenis-de-segunda-mano-en-Madrid-231104755_1.jpg?VersionId=T9dPhTf.3ZWiAFjnB7CvGKsvbdfPLHht", usuario),
-                new Producto("Xbox One X", 425.0f, 
-                    "https://images.vibbo.com/635x476/860/86038583196.jpg", usuario2),
-                new Producto("Trípode flexible", 10.0f, 
-                    "https://images.vibbo.com/635x476/860/86074256163.jpg", usuario2),
-                new Producto("Iphone 7 128 GB", 350.0f, 
-                    "https://store.storeimages.cdn-apple.com/4667/as-images.apple.com/is/image/AppleInc/aos/published/images/i/ph/iphone7/rosegold/iphone7-rosegold-select-2016?wid=470&hei=556&fmt=jpeg&qlt=95&op_usm=0.5,0.5&.v=1472430205982", usuario2)
+                new Producto("iPhone 15 Pro Max", 1199.0f,
+                    "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-7inch-naturaltitanium?wid=5120&hei=2880&fmt=p-jpg&qlt=80&.v=1692895702708",
+                    "El iPhone más avanzado de Apple con chip A17 Pro, titanio aeroespacial y cámara de 48MP. Estado impecable, apenas usado.",
+                    "Smartphones", usuario),
+                new Producto("Samsung Galaxy S24 Ultra", 1099.0f,
+                    "https://images.samsung.com/is/image/samsung/p6pim/es/2401/gallery/es-galaxy-s24-s928-sm-s928bztgeub-thumb-539573268",
+                    "Flagship de Samsung con S Pen integrado, pantalla Dynamic AMOLED 2X y cámara de 200MP. Como nuevo, con todos los accesorios.",
+                    "Smartphones", usuario),
+                new Producto("Google Pixel 8 Pro", 899.0f,
+                    "https://lh3.googleusercontent.com/wEt6FZKrZ8kYKMvDNBrY9bMh4hhRr4vQbqFqxnFTOqfB0Ku7fZ8vR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qR5qF5qF=w200",
+                    "El mejor teléfono para fotografía con IA de Google Tensor G3. Pantalla LTPO de 120Hz. Excelente estado de conservación.",
+                    "Smartphones", usuario2),
+                new Producto("MacBook Pro M3", 1999.0f,
+                    "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-m3-pro-max-spaceblack-select-202310?wid=904&hei=840&fmt=jpeg&qlt=90&.v=1697311054290",
+                    "MacBook Pro 14 con chip M3 Max, 36GB RAM, 1TB SSD. Perfecto para profesionales creativos. Garantía Apple vigente.",
+                    "Laptops", admin),
+                new Producto("AirPods Pro 2ª Gen", 249.0f,
+                    "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MQD83?wid=1144&hei=1144&fmt=jpeg&qlt=90&.v=1660803972361",
+                    "Auriculares con cancelación de ruido adaptativa y audio espacial personalizado. Nuevos en caja sellada.",
+                    "Audio", moderador),
+                new Producto("Steam Deck OLED", 549.0f,
+                    "https://cdn.cloudflare.steamstatic.com/steamdeck/images/steamdeck_unity_share.jpg",
+                    "Consola portátil con pantalla OLED HDR de 7.4 pulgadas. Modelo de 512GB. Gaming en cualquier lugar. Como nuevo.",
+                    "Gaming", usuario2)
             );
 
             listado.forEach(productoServicio::insertar);
-        };
-    }
-
-    @Bean
-    CommandLineRunner init(StorageService storageService) {
-        return (args) -> {
-            storageService.deleteAll();
-            storageService.init();
         };
     }
 }

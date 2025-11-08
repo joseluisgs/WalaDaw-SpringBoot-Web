@@ -34,6 +34,9 @@ public class Usuario {
 
     private String password;
 
+    @NotEmpty
+    private String rol = "USER"; // Por defecto USER, puede ser ADMIN, USER, MODERATOR
+
     public Usuario() {
     }
 
@@ -43,6 +46,16 @@ public class Usuario {
         this.avatar = avatar;
         this.email = email;
         this.password = password;
+        this.rol = "USER";
+    }
+
+    public Usuario(String nombre, String apellidos, String avatar, String email, String password, String rol) {
+        this.nombre = nombre;
+        this.apellidos = apellidos;
+        this.avatar = avatar;
+        this.email = email;
+        this.password = password;
+        this.rol = rol;
     }
 
     public long getId() {
@@ -99,6 +112,14 @@ public class Usuario {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
     }
 
     @Override

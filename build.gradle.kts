@@ -24,6 +24,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
     
     // Pebble Template Engine
     implementation("io.pebbletemplates:pebble-spring-boot-starter:3.2.2")
@@ -38,6 +39,9 @@ dependencies {
     // PDF Generation
     implementation("com.lowagie:itext:4.2.2")
     implementation("com.itextpdf:html2pdf:5.0.5")
+    
+    // Image processing
+    implementation("org.imgscalr:imgscalr-lib:4.2")
 }
 
 tasks.withType<JavaCompile> {

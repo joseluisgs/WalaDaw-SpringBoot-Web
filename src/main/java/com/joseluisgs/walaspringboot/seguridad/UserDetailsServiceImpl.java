@@ -26,7 +26,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             builder = User.withUsername(username);
             builder.disabled(false);
             builder.password(usuario.getPassword());
-            builder.authorities(new SimpleGrantedAuthority("ROLE_USER"));
+            // Usar el rol del usuario de la base de datos
+            builder.authorities(new SimpleGrantedAuthority(usuario.getRol()));
         } else {
             throw new UsernameNotFoundException("Usuario no encontrado");
         }
