@@ -2,7 +2,6 @@ package com.joseluisgs.walaspringboot.servicios;
 
 import com.joseluisgs.walaspringboot.modelos.Usuario;
 import com.joseluisgs.walaspringboot.repositorios.UsuarioRepository;
-import jdk.internal.dynalink.support.NameCodec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
