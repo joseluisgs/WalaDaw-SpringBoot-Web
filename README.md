@@ -1,5 +1,7 @@
 # WalaDaw 🛒
 
+![logo](./logo.svg)
+
 [![Java](https://img.shields.io/badge/Java-25-orange)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen)](https://spring.io/projects/spring-boot)
 [![Gradle](https://img.shields.io/badge/Gradle-9.1.0-blue)](https://gradle.org/)
