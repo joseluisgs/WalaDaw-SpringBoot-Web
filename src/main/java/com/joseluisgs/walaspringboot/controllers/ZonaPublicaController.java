@@ -2,7 +2,11 @@ package com.joseluisgs.walaspringboot.controllers;
 
 import com.joseluisgs.walaspringboot.models.Product;
 import com.joseluisgs.walaspringboot.services.ProductService;
+import com.joseluisgs.walaspringboot.services.RatingService;
+import com.joseluisgs.walaspringboot.services.FavoriteService;
+import com.joseluisgs.walaspringboot.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +21,15 @@ public class ZonaPublicaController {
     // Vamos a usar el servicio de producto
     final
     ProductService productoServicio;
+
+    @Autowired
+    RatingService ratingService;
+
+    @Autowired
+    FavoriteService favoriteService;
+
+    @Autowired
+    UserService userService;
 
     @Autowired
     public ZonaPublicaController(ProductService productoServicio) {
@@ -83,6 +96,27 @@ public class ZonaPublicaController {
         if (result != null) {
             // Si lo encotramos lo añadimos al modelo y se lo pasamos
             model.addAttribute("producto", result);
+            
+            // Añadir información de rating
+            Double avgRating = ratingService.getAverageRating(result);
+            Long ratingCount = ratingService.getCountRatings(result);
+            model.addAttribute("averageRating", avgRating != null ? avgRating : 0.0);
+            model.addAttribute("ratingCount", ratingCount);
+            
+            // Añadir información de favoritos si está autenticado
+            try {
+                String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                if (email != null && !email.equals("anonymousUser")) {
+                    var usuario = userService.buscarPorEmail(email);
+                    if (usuario != null) {
+                        boolean isFavorite = favoriteService.isFavorite(usuario, id);
+                        model.addAttribute("isFavorite", isFavorite);
+                    }
+                }
+            } catch (Exception e) {
+                // Usuario no autenticado
+            }
+            
             return "producto";
         }
         // si no a public

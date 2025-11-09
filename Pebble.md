@@ -1242,3 +1242,336 @@ model.addAttribute("total", carritoServicio.calcularTotal());
 
 **Última actualización:** Enero 2025  
 **Autor:** José Luis González Sánchez
+
+## Casos de Uso Reales del Proyecto
+
+### 1. Verificación de Nulos con `is not null`
+
+❌ **Problema:** Comparar directamente objetos causa PebbleException
+
+```pebble
+{% if producto.compra %}  {# ERROR: Wrong operand type #}
+    <span>Vendido</span>
+{% endif %}
+```
+
+✅ **Solución:** Usar `is not null` para verificar objetos
+
+```pebble
+{% if producto.compra is not null %}
+    <span class="badge bg-success">Vendido</span>
+{% else %}
+    <span class="badge bg-warning">Disponible</span>
+{% endif %}
+```
+
+### 2. CSRF Tokens en Formularios
+
+```pebble
+<form method="post" action="/app/misproductos/editar/submit">
+    {# IMPORTANTE: Incluir token CSRF para evitar error 403 #}
+    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+    
+    <input type="text" name="nombre" value="{{ producto.nombre | default('') }}">
+    <button type="submit">Guardar</button>
+</form>
+```
+
+### 3. Rutas Dinámicas y Parámetros
+
+```pebble
+{# Factura con ID dinámico #}
+<a href="/app/miscompras/factura/{{ compra.id }}" class="btn btn-primary">
+    Ver Factura #{{ compra.id }}
+</a>
+
+{# PDF con ruta correcta #}
+<a href="/app/miscompras/factura/{{ compra.id }}/pdf" class="btn btn-danger">
+    <i class="bi bi-file-pdf"></i> Descargar PDF
+</a>
+```
+
+### 4. Cálculos de IVA en Facturas
+
+```pebble
+<table class="table">
+    <tr>
+        <td>Subtotal (sin IVA):</td>
+        <td>{{ (total / 1.21) | formatPrice }}</td>
+    </tr>
+    <tr>
+        <td>IVA (21%):</td>
+        <td>{{ (total - (total / 1.21)) | formatPrice }}</td>
+    </tr>
+    <tr>
+        <td><strong>TOTAL:</strong></td>
+        <td><strong>{{ total | formatPrice }}</strong></td>
+    </tr>
+</table>
+```
+
+### 5. Iteración con Filtro Condicional
+
+```pebble
+{# Mostrar solo productos de una compra específica #}
+{% for producto in productos %}
+    {% if producto.compra.id == compra.id %}
+    <li class="list-group-item">
+        <span>{{ producto.nombre }}</span>
+        <span class="badge">{{ producto.precio | formatPrice }}</span>
+    </li>
+    {% endif %}
+{% endfor %}
+```
+
+### 6. Estados Dinámicos con Íconos
+
+```pebble
+{# Sistema de favoritos con estado dinámico #}
+<button onclick="toggleFavorite({{ producto.id }})">
+    <i class="bi bi-heart{% if isFavorite %}-fill{% endif %}" id="favoriteIcon"></i>
+    <span id="favoriteText">
+        {% if isFavorite %}Quitar de favoritos{% else %}Añadir a favoritos{% endif %}
+    </span>
+</button>
+```
+
+### 7. Renderizado de Estrellas de Rating
+
+```pebble
+{# Mostrar rating promedio con estrellas #}
+<div class="rating">
+    {% if averageRating > 0 %}
+    <div class="text-warning">
+        {% for i in range(1, 6) %}
+            {% if i <= averageRating %}
+            <i class="bi bi-star-fill"></i>
+            {% elseif i - averageRating < 1 %}
+            <i class="bi bi-star-half"></i>
+            {% else %}
+            <i class="bi bi-star"></i>
+            {% endif %}
+        {% endfor %}
+    </div>
+    <span>{{ averageRating | number_format(1) }} ({{ ratingCount }} valoraciones)</span>
+    {% else %}
+    <span class="text-muted">Sin valoraciones</span>
+    {% endif %}
+</div>
+```
+
+### 8. Condicionales de Autenticación y Roles
+
+```pebble
+{# Mostrar opciones según autenticación y rol #}
+{% if isAuthenticated %}
+    {% if currentUser.email != producto.propietario.email %}
+        <a href="/app/carrito/add/{{ producto.id }}" class="btn btn-success">
+            <i class="bi bi-cart-plus"></i> Comprar
+        </a>
+    {% endif %}
+    
+    {% if isAdmin %}
+        <a href="/admin/productos/eliminar/{{ producto.id }}" class="btn btn-danger">
+            Eliminar
+        </a>
+    {% endif %}
+{% else %}
+    <a href="/auth/login" class="btn btn-primary">
+        Inicia sesión para comprar
+    </a>
+{% endif %}
+```
+
+### 9. Listas Vacías con Mensaje Alternativo
+
+```pebble
+{# Mis compras con mensaje si está vacío #}
+{% if miscompras is empty %}
+<div class="alert alert-info">
+    <p>No has realizado ninguna compra todavía.</p>
+    <a href="/" class="btn btn-primary">Ir a comprar</a>
+</div>
+{% else %}
+<div class="row">
+    {% for compra in miscompras %}
+    <div class="card">
+        <h5>Compra #{{ compra.id }}</h5>
+        <p>Fecha: {{ compra.fechaCompra | formatDate }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+```
+
+### 10. Includes de Fragments
+
+```pebble
+<!DOCTYPE html>
+<html lang="es">
+{# Incluir head común #}
+{% include "fragments/head" %}
+
+<body>
+    {# Incluir navbar #}
+    {% include "fragments/navbar" %}
+    
+    <main>
+        {# Contenido específico de la página #}
+    </main>
+    
+    {# Incluir footer #}
+    {% include "fragments/footer" %}
+</body>
+</html>
+```
+
+### 11. Valores por Defecto en Formularios
+
+```pebble
+{# Formulario que funciona para crear Y editar #}
+<form method="post" action="{% if producto.id != 0 %}/editar/submit{% else %}/nuevo/submit{% endif %}">
+    <input type="hidden" name="id" value="{{ producto.id | default(0) }}">
+    
+    <input type="text" 
+           name="nombre" 
+           value="{{ producto.nombre | default('') }}" 
+           required>
+    
+    <input type="number" 
+           step="0.01" 
+           name="precio" 
+           value="{{ producto.precio | default(0) }}" 
+           min="0.01" 
+           required>
+    
+    <button type="submit">
+        {% if producto.id != 0 %}Actualizar{% else %}Crear{% endif %}
+    </button>
+</form>
+```
+
+### 12. Badges Condicionales con Clases Dinámicas
+
+```pebble
+{# Badge que cambia de color según el estado #}
+{% if producto.compra is not null %}
+    <span class="badge bg-success">Vendido</span>
+{% else %}
+    <span class="badge bg-warning">Disponible</span>
+{% endif %}
+
+{# Badge de carrito con contador dinámico #}
+<a href="/app/carrito">
+    <span class="badge bg-danger">{{ items_carrito | default(0) }}</span>
+    <i class="bi bi-cart"></i> Carrito
+</a>
+```
+
+### 13. JavaScript Embebido con Datos de Pebble
+
+```pebble
+<script>
+// Cargar valoraciones al iniciar la página
+{% if isAuthenticated %}
+document.addEventListener('DOMContentLoaded', function() {
+    loadRatings({{ producto.id }});
+});
+{% endif %}
+
+// Función con parámetros desde Pebble
+function toggleFavorite(productoId) {
+    fetch(`/app/favoritos/add/${productoId}`, {
+        method: 'POST'
+    }).then(response => response.json())
+      .then(data => console.log(data));
+}
+</script>
+```
+
+### 14. Estilos Inline Dinámicos
+
+```pebble
+{# Barra de progreso según porcentaje #}
+<div class="progress">
+    <div class="progress-bar" 
+         style="width: {{ porcentaje }}%"
+         role="progressbar">
+        {{ porcentaje }}%
+    </div>
+</div>
+
+{# Imagen con fallback #}
+<img src="{% if producto.imagen is empty %}https://placehold.it/300x200{% else %}{{ producto.imagen }}{% endif %}"
+     alt="{{ producto.nombre }}"
+     class="img-fluid">
+```
+
+### 15. Uso de Variables de Sesión y ModelAttributes
+
+```pebble
+{# Variables inyectadas automáticamente por @ModelAttribute #}
+<p>Total del carrito: {{ total_carrito | formatPrice }}</p>
+<p>Items en carrito: {{ items_carrito }}</p>
+
+{# Información del usuario autenticado (GlobalControllerAdvice) #}
+<p>Bienvenido, {{ username | default('Usuario') }}</p>
+<p>Rol: {{ userRole | default('USER') }}</p>
+
+{# Variables de sesión #}
+{% if session.getAttribute('mensaje') %}
+<div class="alert alert-info">{{ session.getAttribute('mensaje') }}</div>
+{% endif %}
+```
+
+## Filtros Personalizados Implementados
+
+### formatPrice
+```pebble
+{{ 99.99 | formatPrice }}  {# Salida: 99,99 € #}
+{{ total | formatPrice }}   {# Formatea según locale #}
+```
+
+### formatDate
+```pebble
+{{ compra.fechaCompra | formatDate }}  {# Salida: 15/01/2025 #}
+```
+
+### number_format
+```pebble
+{{ averageRating | number_format(1) }}  {# Salida: 4.5 #}
+{{ precio | number_format(2) }}         {# Salida: 99.95 #}
+```
+
+## Errores Comunes y Soluciones
+
+### Error: "Wrong operand(s) type in conditional expression"
+```pebble
+❌ {% if objeto %}           {# Error con objetos #}
+✅ {% if objeto is not null %}  {# Correcto #}
+```
+
+### Error: "Invalid CSRF token"
+```pebble
+❌ <form method="post">  {# Falta token #}
+✅ <form method="post">
+    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+</form>
+```
+
+### Error: Variable no encontrada
+```pebble
+❌ {{ precio }}              {# Error si no existe #}
+✅ {{ precio | default(0) }}  {# Con valor por defecto #}
+```
+
+### Error: Ruta 404
+```pebble
+❌ <a href="/app/compra/factura/{{ id }}/pdf">  {# Ruta incorrecta #}
+✅ <a href="/app/miscompras/factura/{{ id }}/pdf">  {# Ruta correcta #}
+```
+
+---
+
+**Actualizado con ejemplos reales:** Noviembre 2025  
+**Proyecto:** WalaSpringBoot Marketplace

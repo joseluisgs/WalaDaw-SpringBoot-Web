@@ -1635,3 +1635,620 @@ public class ProductoController {
 
 **Última actualización:** Enero 2025  
 **Autor:** José Luis González Sánchez
+
+## Casos de Uso Avanzados del Proyecto
+
+### 1. GlobalControllerAdvice - Variables Globales
+
+```java
+@ControllerAdvice
+public class GlobalControllerAdvice {
+    
+    @Autowired
+    private MessageSource messageSource;
+    
+    // Inyectar información de autenticación en todas las vistas
+    @ModelAttribute("isAuthenticated")
+    public boolean isAuthenticated() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
+    }
+    
+    @ModelAttribute("currentUser")
+    public User getCurrentUser() {
+        if (isAuthenticated()) {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            return userService.buscarPorEmail(email);
+        }
+        return null;
+    }
+    
+    @ModelAttribute("isAdmin")
+    public boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+    }
+    
+    // Función de mensajes disponible en todas las vistas
+    @ModelAttribute("message")
+    public Function<String, String> messageFunction() {
+        return key -> messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+    }
+}
+```
+
+### 2. ModelAttribute - Datos Compartidos en Controller
+
+```java
+@Controller
+@RequestMapping("/app")
+public class PurchaseController {
+    
+    @Autowired
+    HttpSession session;
+    
+    @Autowired
+    ProductService productoServicio;
+    
+    // Este método se ejecuta antes de CADA petición del controller
+    @ModelAttribute("carrito")
+    public List<Product> productosCarrito() {
+        List<Long> contenido = (List<Long>) session.getAttribute("carrito");
+        return (contenido == null) ? null : productoServicio.variosPorId(contenido);
+    }
+    
+    // Cálculo automático del total
+    @ModelAttribute("total_carrito")
+    public Double totalCarrito() {
+        List<Product> productosCarrito = productosCarrito();
+        if (productosCarrito != null) {
+            return productosCarrito.stream()
+                    .mapToDouble(Product::getPrecio)
+                    .sum();
+        }
+        return 0.0;
+    }
+    
+    // Ahora TODAS las vistas del controller tienen acceso a "carrito" y "total_carrito"
+    @GetMapping("/carrito")
+    public String verCarrito(Model model) {
+        // No necesitamos añadir nada al modelo
+        return "app/compra/carrito";
+    }
+}
+```
+
+### 3. Email Asíncrono - Evitar Bloqueos
+
+```java
+@Service
+public class EmailService {
+    
+    @Autowired
+    private JavaMailSender mailSender;
+    
+    public void enviarEmailConfirmacionCompra(Purchase compra) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(compra.getPropietario().getEmail());
+            helper.setSubject("Confirmación de Compra");
+            
+            String htmlContent = construirEmailHTML(compra);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+        } catch (Exception e) {
+            logger.error("Error al enviar email: " + e.getMessage());
+        }
+    }
+    
+    private String construirEmailHTML(Purchase compra) {
+        // Construir HTML con estilo inline
+        StringBuilder html = new StringBuilder();
+        html.append("<html><body style='font-family: Arial;'>");
+        html.append("<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);'>");
+        html.append("<h1 style='color: white;'>Confirmación de Compra</h1>");
+        html.append("</div>");
+        // ... más HTML
+        return html.toString();
+    }
+}
+
+// En el controller - Envío asíncrono
+@GetMapping("/carrito/finalizar")
+public String checkout() {
+    Purchase compra = compraServicio.insertar(new Purchase(), usuario);
+    productos.forEach(p -> compraServicio.addProductoCompra(p, compra));
+    
+    // Enviar email en un thread separado para no bloquear
+    new Thread(() -> {
+        try {
+            emailService.enviarEmailConfirmacionCompra(compra);
+        } catch (Exception e) {
+            // Log pero no fallar la compra
+            logger.error("Error enviando email: " + e.getMessage());
+        }
+    }).start();
+    
+    return "redirect:/app/miscompras/factura/" + compra.id;
+}
+```
+
+### 4. Gestión de Archivos - Upload y Storage
+
+```java
+@Service
+public class FileSystemStorageService implements StorageService {
+    
+    private final Path rootLocation;
+    
+    public String store(MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                throw new StorageException("Archivo vacío");
+            }
+            
+            String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            String extension = filename.substring(filename.lastIndexOf("."));
+            String storedFilename = UUID.randomUUID().toString() + extension;
+            
+            Path destinationFile = this.rootLocation.resolve(storedFilename);
+            Files.copy(file.getInputStream(), destinationFile);
+            
+            return storedFilename;
+        } catch (IOException e) {
+            throw new StorageException("Error al guardar archivo", e);
+        }
+    }
+    
+    public void delete(String filename) {
+        try {
+            Path file = rootLocation.resolve(filename);
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            logger.error("Error al eliminar archivo: " + filename);
+        }
+    }
+}
+
+// En el controller
+@PostMapping("/misproducto/nuevo/submit")
+public String nuevoProductoSubmit(
+        @Valid @ModelAttribute Product producto,
+        @RequestParam("file") MultipartFile file,
+        BindingResult bindingResult) {
+    
+    if (bindingResult.hasErrors()) {
+        return "app/producto/ficha";
+    }
+    
+    if (!file.isEmpty()) {
+        String imagen = storageService.store(file);
+        producto.setImagen(MvcUriComponentsBuilder
+            .fromMethodName(FilesController.class, "serveFile", imagen)
+            .build().toUriString());
+    }
+    
+    producto.setPropietario(usuario);
+    productoServicio.insertar(producto);
+    return "redirect:/app/misproductos";
+}
+```
+
+### 5. Generación de PDF al Vuelo
+
+```java
+@Controller
+@RequestMapping("/app")
+public class PurchaseController {
+    
+    @Autowired
+    Html2PdfService documentGeneratorService;
+    
+    @RequestMapping(
+        value = "/miscompras/factura/{id}/pdf",
+        method = RequestMethod.GET,
+        produces = MediaType.APPLICATION_PDF_VALUE
+    )
+    public ResponseEntity<InputStreamResource> facturaPDF(@PathVariable Long id) {
+        Purchase compra = compraServicio.buscarPorId(id);
+        List<Product> productos = productoServicio.productosDeUnaCompra(compra);
+        Double total = productos.stream().mapToDouble(Product::getPrecio).sum();
+        
+        ByteArrayInputStream bis = GeneradorPDF.factura2PDF(compra, productos, total);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "inline; filename=factura_" + compra.getId() + ".pdf");
+        
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(bis));
+    }
+}
+```
+
+### 6. API REST con AJAX - Favoritos y Ratings
+
+```java
+@Controller
+@RequestMapping("/app")
+public class FavoriteController {
+    
+    @Autowired
+    private FavoriteService favoriteService;
+    
+    // Endpoint REST que retorna JSON
+    @PostMapping("/favoritos/add/{productoId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addFavorito(@PathVariable Long productoId) {
+        User usuario = getAuthenticatedUser();
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            favoriteService.addFavorite(usuario, productoId);
+            response.put("success", true);
+            response.put("message", "Producto añadido a favoritos");
+            response.put("isFavorite", true);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al añadir a favoritos");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+    
+    @DeleteMapping("/favoritos/remove/{productoId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> removeFavorito(@PathVariable Long productoId) {
+        User usuario = getAuthenticatedUser();
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            favoriteService.removeFavorite(usuario, productoId);
+            response.put("success", true);
+            response.put("message", "Producto eliminado de favoritos");
+            response.put("isFavorite", false);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al eliminar de favoritos");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+}
+
+// JavaScript en la vista para consumir la API
+/*
+function toggleFavorite(productoId) {
+    const isFavorite = document.getElementById('favoriteIcon').classList.contains('bi-heart-fill');
+    const method = isFavorite ? 'DELETE' : 'POST';
+    const url = isFavorite ? `/app/favoritos/remove/${productoId}` : `/app/favoritos/add/${productoId}`;
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar UI
+        }
+    });
+}
+*/
+```
+
+### 7. Custom Error Controller
+
+```java
+@Controller
+public class CustomErrorController implements ErrorController {
+    
+    @RequestMapping("/error")
+    public String handleError(HttpServletRequest request, Model model) {
+        Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        
+        if (status != null) {
+            int statusCode = Integer.parseInt(status.toString());
+            
+            if (statusCode == HttpStatus.NOT_FOUND.value()) {
+                model.addAttribute("errorCode", "404");
+                model.addAttribute("errorMessage", "Página no encontrada");
+            } else if (statusCode == HttpStatus.FORBIDDEN.value()) {
+                model.addAttribute("errorCode", "403");
+                model.addAttribute("errorMessage", "Acceso denegado");
+            } else if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
+                model.addAttribute("errorCode", "500");
+                model.addAttribute("errorMessage", "Error interno del servidor");
+            }
+        }
+        
+        return "error";
+    }
+}
+```
+
+### 8. Validaciones Personalizadas
+
+```java
+// Anotación personalizada
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = ValidImageValidator.class)
+public @interface ValidImage {
+    String message() default "Imagen no válida";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
+}
+
+// Validador
+public class ValidImageValidator implements ConstraintValidator<ValidImage, MultipartFile> {
+    
+    @Override
+    public boolean isValid(MultipartFile file, ConstraintValidatorContext context) {
+        if (file == null || file.isEmpty()) {
+            return true; // Permitir vacío, usar @NotNull por separado
+        }
+        
+        String contentType = file.getContentType();
+        return contentType != null && 
+               (contentType.equals("image/jpeg") || 
+                contentType.equals("image/png") || 
+                contentType.equals("image/gif"));
+    }
+}
+
+// Uso en el modelo
+@Entity
+public class Product {
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(min = 3, max = 100, message = "El nombre debe tener entre 3 y 100 caracteres")
+    private String nombre;
+    
+    @NotNull(message = "El precio es obligatorio")
+    @DecimalMin(value = "0.01", message = "El precio debe ser mayor que 0")
+    private Float precio;
+    
+    @ValidImage(message = "Solo se permiten imágenes JPG, PNG o GIF")
+    private MultipartFile imagen;
+}
+```
+
+### 9. Manejo de Sesiones
+
+```java
+@Controller
+@RequestMapping("/app")
+public class PurchaseController {
+    
+    @Autowired
+    HttpSession session;
+    
+    // Añadir al carrito usando sesión
+    @GetMapping("/carrito/add/{id}")
+    public String addCarrito(@PathVariable Long id) {
+        List<Long> contenido = (List<Long>) session.getAttribute("carrito");
+        
+        if (contenido == null) {
+            contenido = new ArrayList<>();
+        }
+        
+        if (!contenido.contains(id)) {
+            contenido.add(id);
+        }
+        
+        session.setAttribute("carrito", contenido);
+        session.setAttribute("items_carrito", contenido.size());
+        
+        return "redirect:/app/carrito";
+    }
+    
+    // Limpiar carrito
+    @GetMapping("/carrito/finalizar")
+    public String checkout() {
+        // Procesar compra...
+        
+        // Limpiar sesión
+        session.removeAttribute("carrito");
+        session.removeAttribute("items_carrito");
+        
+        return "redirect:/app/miscompras/factura/" + compra.getId();
+    }
+}
+```
+
+### 10. Filtros y Búsqueda Avanzada
+
+```java
+@Controller
+@RequestMapping("/public")
+public class ZonaPublicaController {
+    
+    @GetMapping({"", "/", "/index"})
+    public String index(
+            Model model,
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(name = "categoria", required = false) String categoria,
+            @RequestParam(name = "minPrecio", required = false) Float minPrecio,
+            @RequestParam(name = "maxPrecio", required = false) Float maxPrecio) {
+        
+        List<Product> productos = productoServicio.productosSinVender();
+        
+        // Aplicar filtro de búsqueda
+        if (query != null && !query.trim().isEmpty()) {
+            productos = productoServicio.buscar(query);
+        }
+        
+        // Filtrar por categoría
+        if (categoria != null && !categoria.trim().isEmpty()) {
+            productos = productos.stream()
+                    .filter(p -> categoria.equals(p.getCategoria()))
+                    .toList();
+        }
+        
+        // Filtrar por rango de precios
+        if (minPrecio != null && maxPrecio != null) {
+            productos = productos.stream()
+                    .filter(p -> p.getPrecio() >= minPrecio && p.getPrecio() <= maxPrecio)
+                    .toList();
+        } else if (minPrecio != null) {
+            productos = productos.stream()
+                    .filter(p -> p.getPrecio() >= minPrecio)
+                    .toList();
+        } else if (maxPrecio != null) {
+            productos = productos.stream()
+                    .filter(p -> p.getPrecio() <= maxPrecio)
+                    .toList();
+        }
+        
+        model.addAttribute("productos", productos);
+        model.addAttribute("q", query);
+        model.addAttribute("categoria", categoria);
+        model.addAttribute("minPrecio", minPrecio);
+        model.addAttribute("maxPrecio", maxPrecio);
+        
+        return "index";
+    }
+}
+```
+
+## Patrones de Diseño Implementados
+
+### 1. Repository Pattern
+```java
+public interface ProductRepository extends JpaRepository<Product, Long> {
+    List<Product> findByCompraIsNull();
+    List<Product> findByCompra(Purchase compra);
+    List<Product> findByPropietario(User propietario);
+}
+```
+
+### 2. Service Layer Pattern
+```java
+@Service
+public class ProductService {
+    @Autowired
+    private ProductRepository repositorio;
+    
+    @Cacheable("productos")
+    public List<Product> findAll() {
+        return repositorio.findAll();
+    }
+    
+    @CacheEvict(value = "productos", allEntries = true)
+    public Product insertar(Product producto) {
+        return repositorio.save(producto);
+    }
+}
+```
+
+### 3. DTO Pattern (Data Transfer Object)
+```java
+public class ProductoDTO {
+    private Long id;
+    private String nombre;
+    private Double precio;
+    private String imagen;
+    private Double averageRating;
+    private Long ratingCount;
+    private boolean isFavorite;
+    
+    // Constructor desde entidad
+    public ProductoDTO(Product producto, Double rating, Long count, boolean fav) {
+        this.id = producto.getId();
+        this.nombre = producto.getNombre();
+        this.precio = producto.getPrecio();
+        this.averageRating = rating;
+        this.ratingCount = count;
+        this.isFavorite = fav;
+    }
+}
+```
+
+## Testing de Controllers
+
+### Test de Controller con MockMvc
+
+```java
+@WebMvcTest(ProductController.class)
+class ProductControllerTest {
+    
+    @Autowired
+    private MockMvc mockMvc;
+    
+    @MockBean
+    private ProductService productService;
+    
+    @Test
+    void testListarProductos() throws Exception {
+        List<Product> productos = Arrays.asList(
+            new Product("Producto 1", 10.0),
+            new Product("Producto 2", 20.0)
+        );
+        
+        when(productService.findAll()).thenReturn(productos);
+        
+        mockMvc.perform(get("/app/misproductos"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("app/producto/lista"))
+                .andExpect(model().attributeExists("productos"))
+                .andExpect(model().attribute("productos", hasSize(2)));
+    }
+    
+    @Test
+    void testCrearProducto() throws Exception {
+        mockMvc.perform(post("/app/misproducto/nuevo/submit")
+                .param("nombre", "Nuevo Producto")
+                .param("precio", "25.50")
+                .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/app/misproductos"));
+    }
+}
+```
+
+## Troubleshooting Común
+
+### Problema: Error 403 en formularios
+**Causa:** Falta el token CSRF  
+**Solución:**
+```html
+<form method="post">
+    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+    <!-- resto del formulario -->
+</form>
+```
+
+### Problema: NullPointerException en templates
+**Causa:** Variable no existe en el modelo  
+**Solución:**
+```pebble
+{{ variable | default('valor_por_defecto') }}
+{% if variable is not null %}{{ variable }}{% endif %}
+```
+
+### Problema: 404 en rutas
+**Causa:** Mapeo incorrecto entre controller y template  
+**Solución:** Verificar que coincidan:
+- Controller: `return "app/producto/lista";`
+- Template: `src/main/resources/templates/app/producto/lista.peb.html`
+
+### Problema: Sesión no persiste
+**Causa:** No configurar correctamente el session timeout  
+**Solución:**
+```properties
+server.servlet.session.timeout=30m
+```
+
+---
+
+**Actualizado con casos reales:** Noviembre 2025  
+**Proyecto:** WalaSpringBoot Marketplace
