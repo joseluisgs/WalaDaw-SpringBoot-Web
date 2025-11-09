@@ -20,12 +20,13 @@
                 <div class="col-md-3">
                     <label class="form-label">{{ message('product.category') }}</label>
                     <select class="form-select" name="categoria">
-                        <option value="">Todas</option>
-                        <option value="Smartphones">{{ message('category.smartphones') }}</option>
-                        <option value="Laptops">{{ message('category.laptops') }}</option>
-                        <option value="Audio">{{ message('category.audio') }}</option>
-                        <option value="Gaming">{{ message('category.gaming') }}</option>
-                        <option value="Accessories">{{ message('category.accessories') }}</option>
+                        <option value="">Todas las categorías</option>
+                        {% for categoria in categorias %}
+                        <option value="{{ categoria.name }}" 
+                                {% if categoriaActual == categoria.name %}selected{% endif %}>
+                            {{ categoria.emoji }} {{ categoria.displayName }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -64,8 +65,8 @@
                     <p class="card-text text-muted small">{{ producto.descripcion | slice(0, 80) }}{% if
                         producto.descripcion | length > 80 %}...{% endif %}</p>
                     {% endif %}
-                    {% if producto.categoria %}
-                    <span class="badge bg-secondary">{{ producto.categoria }}</span>
+                    {% if producto.categoria is not null %}
+                    <span class="badge bg-info">{{ producto.categoria.emoji }} {{ producto.categoria.displayName }}</span>
                     {% endif %}
                 </div>
                 <div class="card-footer bg-white">
