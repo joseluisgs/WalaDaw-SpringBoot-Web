@@ -8,11 +8,13 @@
 
 **Ejemplo didáctico de web dinámicas con JAVA y Spring Boot para la JVM**
 
-Una aplicación web de comercio electrónico de segunda mano con características avanzadas de seguridad, internacionalización y gestión de usuarios. Migración completa y modernizada del proyecto [WalaSpringBoot2020](https://github.com/joseluisgs/WalaSpringBoot2020) con las últimas tecnologías 2025.
+Una aplicación web de comercio electrónico de segunda mano con características avanzadas de seguridad,
+internacionalización y gestión de usuarios.
 
 ## 🎯 Descripción
 
 WalaDaw es un marketplace moderno desarrollado con Spring Boot que permite a los usuarios:
+
 - Comprar y vender productos de segunda mano
 - Gestionar perfiles de usuario con avatares
 - Sistema de valoraciones y comentarios
@@ -149,11 +151,11 @@ docker run --rm -v waladaw_database-data:/data -v $(pwd):/backup alpine tar xzf 
 
 ## 👥 Usuarios Demo
 
-| Usuario | Email | Password | Rol |
-|---------|-------|----------|-----|
-| Admin | admin@waladaw.com | admin123 | ADMIN |
-| Juan | juan@waladaw.com | user123 | USER |
-| María | maria@waladaw.com | user123 | USER |
+| Usuario | Email             | Password | Rol   |
+|---------|-------------------|----------|-------|
+| Admin   | admin@waladaw.com | admin123 | ADMIN |
+| Juan    | juan@waladaw.com  | user123  | USER  |
+| María   | maria@waladaw.com | user123  | USER  |
 
 ## 🔒 Seguridad
 
@@ -166,6 +168,7 @@ docker run --rm -v waladaw_database-data:/data -v $(pwd):/backup alpine tar xzf 
 ## 🌐 Características
 
 ### Para Usuarios
+
 - ✅ Registro y login seguro
 - ✅ Perfil con avatar personalizable
 - ✅ Publicar productos con imágenes
@@ -173,7 +176,8 @@ docker run --rm -v waladaw_database-data:/data -v $(pwd):/backup alpine tar xzf 
 - ✅ Gestión de favoritos
 - ✅ Carrito de compras
 
-### Para Administradores  
+### Para Administradores
+
 - ✅ Panel de control completo
 - ✅ Gestión de usuarios
 - ✅ Moderación de contenido

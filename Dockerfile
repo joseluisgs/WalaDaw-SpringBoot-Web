@@ -27,8 +27,6 @@ RUN ./gradlew build -x test --no-daemon
 
 # Runtime stage  
 FROM openjdk:25-jre-slim
-LABEL maintainer="joseluisgs@gmail.com"
-LABEL description="WalaDaw - Tu tienda de confianza"
 
 # Create non-root user for security
 RUN addgroup --system waladaw && adduser --system --group waladaw
