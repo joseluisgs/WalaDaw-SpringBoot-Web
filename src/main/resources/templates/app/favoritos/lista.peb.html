@@ -50,12 +50,23 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script>
+function getCsrfToken() {
+    return document.querySelector('meta[name="_csrf"]').getAttribute('content');
+}
+
+function getCsrfHeader() {
+    return document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+}
+
 function removeFavorite(productoId, button) {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    headers[getCsrfHeader()] = getCsrfToken();
+    
     fetch('/app/favoritos/remove/' + productoId, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        }
+        headers: headers
     })
     .then(response => response.json())
     .then(data => {
