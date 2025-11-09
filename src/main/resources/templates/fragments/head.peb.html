@@ -1,22 +1,29 @@
 <head>
     <title>{{ appName }} - {{ appDescription }}</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="_csrf" content="{{ csrfToken }}"/>
-    <meta name="_csrf_param" content="{{ csrfParamName }}"/>
-    <meta name="_csrf_header" content="{{ csrfHeaderName }}"/>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
-    
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="{{ csrfToken }}" name="_csrf"/>
+    <meta content="{{ csrfParamName }}" name="_csrf_param"/>
+    <meta content="{{ csrfHeaderName }}" name="_csrf_header"/>
+    <link href="/favicon.ico" rel="icon" type="image/x-icon">
+    <link href="/favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="/favicon.ico" rel="icon" type="image/x-icon">
+    <link href="/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+    <link href="/favicon-48x48.png" rel="icon" sizes="48x48" type="image/png">
+    <link href="/favicon-64x64.png" rel="icon" sizes="64x64" type="image/png">
+    <link href="/favicon-256x256.png" rel="icon" sizes="96x96" type="image/png">
+    <link href="/apple-touch-icon.png" rel="apple-touch-icon" sizes="256x256" type="image/png">
+
     <!-- Bootstrap 5.3 CSS via CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    
+    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" rel="stylesheet">
+
     <!-- Custom styles -->
-    <link href="/css/styles.css" rel="stylesheet" type="text/css" />
-    
+    <link href="/css/styles.css" rel="stylesheet" type="text/css"/>
+
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
         body {
             background: url(/images/fondo.jpg) no-repeat center center fixed;
