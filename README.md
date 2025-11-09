@@ -27,13 +27,16 @@ Migración completa y modernizada del proyecto [WalaSpringBoot2020](https://gith
 - 🛍️ **Marketplace de Segunda Mano**: Compra y vende productos usados
 - 🔐 **Sistema de Roles**: ADMIN, USER, MODERATOR con permisos diferenciados
 - 🌍 **Internacionalización**: Soporte completo para Español e Inglés
-- 📧 **Notificaciones por Email**: Confirmación automática de compras
+- 📧 **Notificaciones por Email**: Confirmación automática asíncrona de compras con templates HTML
 - 📊 **Dashboard Administrativo**: Estadísticas y gráficos con Chart.js
 - 🔍 **Búsqueda Avanzada**: Filtros por nombre, categoría y precio
 - 🖼️ **Gestión de Imágenes**: Subida, validación y redimensionado automático
 - 📱 **Responsive Design**: Bootstrap 5.3 optimizado para todos los dispositivos
 - ⚡ **Cache Inteligente**: Mejora de rendimiento con Spring Cache
-- 📄 **Generación de PDFs**: Facturas automáticas de compras
+- 📄 **Generación de PDFs**: Facturas automáticas con cálculo de IVA y diseño profesional
+- ❤️ **Sistema de Favoritos**: Añade productos a favoritos con AJAX
+- ⭐ **Valoraciones y Ratings**: Sistema completo de reviews con estrellas y comentarios
+- 🛡️ **Seguridad CSRF**: Protección completa contra ataques Cross-Site Request Forgery
 
 ### Productos 2024-2025
 
