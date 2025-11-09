@@ -20,7 +20,7 @@
                 <div class="col-md-3">
                     <label class="form-label">{{ message('product.category') }}</label>
                     <select class="form-select" name="categoria">
-                        <option value="">Todas las categorías</option>
+                        <option value="">{{ message('filter.all.categories') }}</option>
                         {% for categoria in categorias %}
                         <option value="{{ categoria.name }}"
                                 {% if categoriaActual == categoria.name %}selected{% endif %}>
@@ -93,13 +93,13 @@
 
     <!-- Pagination Controls -->
     {% if totalPages > 1 %}
-    <nav aria-label="Navegación de productos" class="mt-4">
+    <nav aria-label="{{ message('pagination.navigation') }}" class="mt-4">
         <div class="row align-items-center">
             <div class="col-md-6">
                 <p class="text-muted mb-0">
                     {% set endItem = (currentPage + 1) * size %}
-                    Mostrando {{ (currentPage * size) + 1 }} a {% if endItem > totalElements %}{{ totalElements }}{% else %}{{ endItem }}{% endif %} 
-                    de {{ totalElements }} productos
+                    {{ message('pagination.showing') }} {{ (currentPage * size) + 1 }} {{ message('pagination.to') }} {% if endItem > totalElements %}{{ totalElements }}{% else %}{{ endItem }}{% endif %} 
+                    {{ message('pagination.of') }} {{ totalElements }} {{ message('pagination.products') }}
                 </p>
             </div>
             <div class="col-md-6">
@@ -108,12 +108,12 @@
                     {% if hasPrevious %}
                     <li class="page-item">
                         <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if categoriaActual %}categoria={{ categoriaActual }}&{% endif %}{% if minPrecio %}minPrecio={{ minPrecio }}&{% endif %}{% if maxPrecio %}maxPrecio={{ maxPrecio }}&{% endif %}page={{ currentPage - 1 }}&size={{ size }}">
-                            <i class="bi bi-chevron-left"></i> Anterior
+                            <i class="bi bi-chevron-left"></i> {{ message('pagination.previous') }}
                         </a>
                     </li>
                     {% else %}
                     <li class="page-item disabled">
-                        <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
+                        <span class="page-link"><i class="bi bi-chevron-left"></i> {{ message('pagination.previous') }}</span>
                     </li>
                     {% endif %}
 
@@ -134,12 +134,12 @@
                     {% if hasNext %}
                     <li class="page-item">
                         <a class="page-link" href="?{% if q %}q={{ q }}&{% endif %}{% if categoriaActual %}categoria={{ categoriaActual }}&{% endif %}{% if minPrecio %}minPrecio={{ minPrecio }}&{% endif %}{% if maxPrecio %}maxPrecio={{ maxPrecio }}&{% endif %}page={{ currentPage + 1 }}&size={{ size }}">
-                            Siguiente <i class="bi bi-chevron-right"></i>
+                            {{ message('pagination.next') }} <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>
                     {% else %}
                     <li class="page-item disabled">
-                        <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
+                        <span class="page-link">{{ message('pagination.next') }} <i class="bi bi-chevron-right"></i></span>
                     </li>
                     {% endif %}
                 </ul>
