@@ -2926,6 +2926,449 @@ class ProductControllerTest {
 server.servlet.session.timeout=30m
 ```
 
+## Paginación en Spring MVC
+
+La paginación es esencial en aplicaciones enterprise para manejar grandes conjuntos de datos de forma eficiente. Spring Data JPA proporciona soporte nativo para paginación mediante `Pageable` y `Page`.
+
+### Conceptos Básicos
+
+**Pageable**: Interfaz que encapsula información de paginación (número de página, tamaño, ordenamiento)  
+**Page**: Interfaz que representa una página de datos con metadatos (total de elementos, páginas, etc.)
+
+### Implementación en el Repositorio
+
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+    // Método paginado básico
+    Page<User> findAll(Pageable pageable);
+    
+    // Método paginado con filtro
+    Page<User> findByRol(String rol, Pageable pageable);
+    
+    // Query personalizada con paginación
+    @Query("SELECT u FROM User u WHERE LOWER(u.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(u.apellidos) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))")
+    Page<User> findBySearchPaginated(@Param("query") String query, Pageable pageable);
+    
+    // Query con múltiples filtros
+    @Query("SELECT u FROM User u WHERE u.rol = :rol AND " +
+           "(LOWER(u.nombre) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(u.apellidos) LIKE LOWER(CONCAT('%', :query, '%')))")
+    Page<User> findBySearchAndRolPaginated(@Param("query") String query, 
+                                           @Param("rol") String rol, 
+                                           Pageable pageable);
+}
+```
+
+### Implementación en el Service
+
+```java
+@Service
+public class UserService {
+    
+    @Autowired
+    private UserRepository repositorio;
+    
+    public Page<User> findAllPaginated(Pageable pageable) {
+        return repositorio.findAll(pageable);
+    }
+    
+    public Page<User> findByRolPaginated(String rol, Pageable pageable) {
+        return repositorio.findByRol(rol, pageable);
+    }
+    
+    public Page<User> findBySearchPaginated(String query, Pageable pageable) {
+        return repositorio.findBySearchPaginated(query, pageable);
+    }
+    
+    public Page<User> findBySearchAndRolPaginated(String query, String rol, Pageable pageable) {
+        return repositorio.findBySearchAndRolPaginated(query, rol, pageable);
+    }
+}
+```
+
+### Implementación en el Controller
+
+#### Ejemplo Completo: Gestión de Usuarios con Paginación
+
+```java
+@Controller
+@RequestMapping("/admin")
+public class AdminController {
+    
+    @Autowired
+    private UserService usuarioServicio;
+    
+    @GetMapping("/usuarios")
+    public String gestionUsuarios(Model model,
+                                 @RequestParam(name = "q", required = false) String query,
+                                 @RequestParam(name = "rol", required = false) String rol,
+                                 @RequestParam(name = "page", defaultValue = "0") int page,
+                                 @RequestParam(name = "size", defaultValue = "10") int size) {
+        
+        // Crear objeto Pageable con ordenamiento
+        Pageable pageable = PageRequest.of(
+            page,                                    // Número de página (0-indexed)
+            size,                                    // Tamaño de página
+            Sort.by(Sort.Direction.DESC, "id")      // Ordenar por ID descendente
+        );
+        
+        Page<User> usuariosPage;
+        
+        // Aplicar filtros según parámetros
+        if (query != null && !query.trim().isEmpty() && rol != null && !rol.isEmpty()) {
+            // Búsqueda con query y rol
+            usuariosPage = usuarioServicio.findBySearchAndRolPaginated(query, rol, pageable);
+        } else if (query != null && !query.trim().isEmpty()) {
+            // Solo búsqueda
+            usuariosPage = usuarioServicio.findBySearchPaginated(query, pageable);
+        } else if (rol != null && !rol.isEmpty()) {
+            // Solo filtro por rol
+            usuariosPage = usuarioServicio.findByRolPaginated(rol, pageable);
+        } else {
+            // Sin filtros
+            usuariosPage = usuarioServicio.findAllPaginated(pageable);
+        }
+        
+        // Pasar datos de paginación a la vista
+        model.addAttribute("usuarios", usuariosPage.getContent());         // Lista de usuarios de la página actual
+        model.addAttribute("currentPage", page);                           // Página actual
+        model.addAttribute("totalPages", usuariosPage.getTotalPages());    // Total de páginas
+        model.addAttribute("totalElements", usuariosPage.getTotalElements()); // Total de elementos
+        model.addAttribute("size", size);                                  // Tamaño de página
+        model.addAttribute("hasNext", usuariosPage.hasNext());            // ¿Hay página siguiente?
+        model.addAttribute("hasPrevious", usuariosPage.hasPrevious());    // ¿Hay página anterior?
+        
+        // Mantener filtros en la URL
+        model.addAttribute("q", query);
+        model.addAttribute("rolActual", rol);
+        
+        return "admin/usuarios";
+    }
+}
+```
+
+#### Ejemplo: Paginación de Productos con Múltiples Filtros
+
+```java
+@GetMapping("/productos")
+public String gestionProductos(Model model,
+                              @RequestParam(name = "q", required = false) String query,
+                              @RequestParam(name = "categoria", required = false) String categoria,
+                              @RequestParam(name = "propietarioId", required = false) Long propietarioId,
+                              @RequestParam(name = "page", defaultValue = "0") int page,
+                              @RequestParam(name = "size", defaultValue = "10") int size) {
+    
+    Pageable pageable = PageRequest.of(page, size, 
+        Sort.by(Sort.Direction.DESC, "id"));
+    
+    Page<Product> productosPage;
+    
+    // Lógica de filtros combinados
+    boolean hasQuery = query != null && !query.trim().isEmpty();
+    boolean hasCategoria = categoria != null && !categoria.isEmpty();
+    boolean hasPropietario = propietarioId != null;
+    
+    if (hasQuery && hasCategoria && hasPropietario) {
+        ProductCategory cat = ProductCategory.valueOf(categoria);
+        productosPage = productoServicio.findByAllFiltersActivePaginated(query, cat, propietarioId, pageable);
+    } else if (hasQuery && hasCategoria) {
+        ProductCategory cat = ProductCategory.valueOf(categoria);
+        productosPage = productoServicio.findByNombreAndCategoriaActivePaginated(query, cat, pageable);
+    } else if (hasQuery && hasPropietario) {
+        productosPage = productoServicio.findByNombreAndPropietarioActivePaginated(query, propietarioId, pageable);
+    } else if (hasCategoria && hasPropietario) {
+        ProductCategory cat = ProductCategory.valueOf(categoria);
+        productosPage = productoServicio.findByCategoriaAndPropietarioActivePaginated(cat, propietarioId, pageable);
+    } else if (hasQuery) {
+        productosPage = productoServicio.findByNombreContainingActivePaginated(query, pageable);
+    } else if (hasCategoria) {
+        ProductCategory cat = ProductCategory.valueOf(categoria);
+        productosPage = productoServicio.findByCategoriaActivePaginated(cat, pageable);
+    } else if (hasPropietario) {
+        productosPage = productoServicio.findByPropietarioIdActivePaginated(propietarioId, pageable);
+    } else {
+        productosPage = productoServicio.findAllActivePaginated(pageable);
+    }
+    
+    // Pasar datos a la vista
+    model.addAttribute("productos", productosPage.getContent());
+    model.addAttribute("currentPage", page);
+    model.addAttribute("totalPages", productosPage.getTotalPages());
+    model.addAttribute("totalElements", productosPage.getTotalElements());
+    model.addAttribute("size", size);
+    model.addAttribute("hasNext", productosPage.hasNext());
+    model.addAttribute("hasPrevious", productosPage.hasPrevious());
+    
+    // Mantener filtros
+    model.addAttribute("q", query);
+    model.addAttribute("categoriaActual", categoria);
+    model.addAttribute("propietarioIdActual", propietarioId);
+    
+    // Agregar listas para los filtros
+    model.addAttribute("categorias", ProductCategory.values());
+    model.addAttribute("usuarios", usuarioServicio.findAll());
+    
+    return "admin/productos";
+}
+```
+
+### Implementación en la Vista (Pebble)
+
+#### Controles de Paginación Completos
+
+```pebble
+<!-- Información de Paginación -->
+{% if totalPages > 1 %}
+<nav aria-label="Navegación de usuarios" class="mt-4">
+    <div class="row align-items-center">
+        <!-- Información de elementos -->
+        <div class="col-md-6">
+            <p class="text-muted mb-0">
+                {% set endItem = (currentPage + 1) * size %}
+                Mostrando {{ (currentPage * size) + 1 }} a 
+                {% if endItem > totalElements %}{{ totalElements }}{% else %}{{ endItem }}{% endif %} 
+                de {{ totalElements }} usuarios
+            </p>
+        </div>
+        
+        <!-- Controles de paginación -->
+        <div class="col-md-6">
+            <ul class="pagination justify-content-end mb-0">
+                <!-- Botón Anterior -->
+                {% if hasPrevious %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if q %}q={{ q }}&{% endif %}{% if rolActual %}rol={{ rolActual }}&{% endif %}page={{ currentPage - 1 }}&size={{ size }}">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </span>
+                </li>
+                {% endif %}
+
+                <!-- Números de página (ventana de 5 páginas) -->
+                {% for i in range(0, totalPages) %}
+                    {% if i == currentPage %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ i + 1 }}</span>
+                    </li>
+                    {% elseif i >= (currentPage - 2) and i <= (currentPage + 2) %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?{% if q %}q={{ q }}&{% endif %}{% if rolActual %}rol={{ rolActual }}&{% endif %}page={{ i }}&size={{ size }}">
+                            {{ i + 1 }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Botón Siguiente -->
+                {% if hasNext %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?{% if q %}q={{ q }}&{% endif %}{% if rolActual %}rol={{ rolActual }}&{% endif %}page={{ currentPage + 1 }}&size={{ size }}">
+                        Siguiente <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Siguiente <i class="bi bi-chevron-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+{% endif %}
+```
+
+#### Ejemplo Completo con Filtros
+
+```pebble
+<!-- Formulario de Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form action="/admin/productos" class="row g-3" method="get">
+            <div class="col-md-4">
+                <label class="form-label">Buscar producto</label>
+                <input class="form-control" name="q" placeholder="Buscar por nombre" type="text"
+                       value="{{ q | default('') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoría</label>
+                <select class="form-select" name="categoria">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.name }}"
+                            {% if categoriaActual == categoria.name %}selected{% endif %}>
+                        {{ categoria.emoji }} {{ categoria.displayName }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Propietario</label>
+                <select class="form-select" name="propietarioId">
+                    <option value="">Todos los propietarios</option>
+                    {% for usuario in usuarios %}
+                    <option value="{{ usuario.id }}"
+                            {% if propietarioIdActual == usuario.id %}selected{% endif %}>
+                        {{ usuario.nombre }} {{ usuario.apellidos }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" type="submit">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Resultados -->
+<div class="card">
+    <div class="card-body">
+        {% if productos is empty %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i> No se encontraron productos con los criterios especificados
+        </div>
+        {% else %}
+        <!-- Tabla con productos -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <!-- ... contenido de la tabla ... -->
+            </table>
+        </div>
+        
+        <!-- Controles de Paginación (ejemplo anterior) -->
+        {% endif %}
+    </div>
+</div>
+```
+
+### Mejores Prácticas para Paginación
+
+#### 1. Tamaños de Página Apropiados
+
+```java
+// ✅ Bueno: Tamaños razonables según el caso de uso
+@RequestParam(name = "size", defaultValue = "10") int size    // Admin dashboard
+@RequestParam(name = "size", defaultValue = "20") int size    // Listado de productos
+@RequestParam(name = "size", defaultValue = "50") int size    // Reportes
+
+// ❌ Malo: Tamaños fijos que no se adaptan
+Page<User> users = repository.findAll(PageRequest.of(0, 100));
+```
+
+#### 2. Validación de Parámetros
+
+```java
+@GetMapping("/usuarios")
+public String lista(@RequestParam(name = "page", defaultValue = "0") int page,
+                   @RequestParam(name = "size", defaultValue = "10") int size) {
+    
+    // Validar que page no sea negativo
+    if (page < 0) page = 0;
+    
+    // Validar límites de size
+    if (size < 1) size = 10;
+    if (size > 100) size = 100;  // Máximo 100 elementos por página
+    
+    Pageable pageable = PageRequest.of(page, size);
+    // ...
+}
+```
+
+#### 3. Mantener Estado de Filtros
+
+```java
+// ✅ Bueno: Mantener todos los filtros en la URL
+model.addAttribute("q", query);
+model.addAttribute("rol", rol);
+model.addAttribute("page", page);
+model.addAttribute("size", size);
+
+// En la vista, incluir todos en los enlaces de paginación
+href="?q={{ q }}&rol={{ rol }}&page={{ i }}&size={{ size }}"
+```
+
+#### 4. Manejo de Páginas Fuera de Rango
+
+```java
+@GetMapping("/usuarios")
+public String lista(@RequestParam(name = "page", defaultValue = "0") int page,
+                   @RequestParam(name = "size", defaultValue = "10") int size,
+                   RedirectAttributes redirectAttributes) {
+    
+    Pageable pageable = PageRequest.of(page, size);
+    Page<User> usuarios = usuarioServicio.findAll(pageable);
+    
+    // Si la página solicitada no existe, redirigir a la última página válida
+    if (page >= usuarios.getTotalPages() && usuarios.getTotalPages() > 0) {
+        redirectAttributes.addFlashAttribute("warning", "Página no encontrada, mostrando última página");
+        return "redirect:/admin/usuarios?page=" + (usuarios.getTotalPages() - 1) + "&size=" + size;
+    }
+    
+    // ... resto del código
+}
+```
+
+#### 5. Performance: Evitar COUNT en Cada Petición
+
+```java
+// Para mejorar performance en grandes conjuntos de datos:
+
+// ❌ Malo: Page<> siempre ejecuta COUNT(*)
+Page<Product> productos = repository.findAll(pageable);
+
+// ✅ Alternativa: Usar Slice cuando no necesites el total
+Slice<Product> productos = repository.findByCategoria(categoria, pageable);
+// Slice solo sabe si hay siguiente página, no el total
+```
+
+#### 6. Índices en Base de Datos
+
+```sql
+-- Añadir índices para mejorar queries paginadas
+CREATE INDEX idx_user_id_desc ON users(id DESC);
+CREATE INDEX idx_product_nombre ON products(nombre);
+CREATE INDEX idx_product_categoria_id ON products(categoria, id DESC);
+```
+
+### Troubleshooting Común
+
+#### Problema: Página vacía en filtros
+**Causa:** Los filtros devuelven menos resultados que el número de página solicitado  
+**Solución:** Resetear a página 0 cuando cambien los filtros
+
+```javascript
+// En el formulario de filtros
+document.querySelector('form').addEventListener('submit', function(e) {
+    // Resetear a página 0 cuando se aplican filtros
+    const pageInput = this.querySelector('input[name="page"]');
+    if (pageInput) pageInput.value = '0';
+});
+```
+
+#### Problema: Filtros se pierden al cambiar de página
+**Causa:** No incluir filtros en la URL de paginación  
+**Solución:** Incluir todos los parámetros de filtro
+
+```pebble
+{# Incluir TODOS los filtros en enlaces de paginación #}
+<a href="?q={{ q | default('') }}&categoria={{ categoria | default('') }}&page={{ i }}">
+```
+
 ---
 
 **Actualizado con casos reales:** Noviembre 2025  

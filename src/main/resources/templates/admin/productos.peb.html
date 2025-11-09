@@ -107,6 +107,9 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="/admin/productos/{{ producto.id }}" class="btn btn-sm btn-info" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ producto.id }}" data-name="{{ producto.nombre }}">
                                 <i class="bi bi-trash"></i>
                             </button>

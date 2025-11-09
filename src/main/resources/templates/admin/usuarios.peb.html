@@ -83,6 +83,9 @@
                         </td>
                         <td>{{ usuario.fechaAlta | formatDate }}</td>
                         <td>
+                            <a href="/admin/usuarios/{{ usuario.id }}" class="btn btn-sm btn-info" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
                             {% if usuario.rol != 'ADMIN' or usuarios | length > 1 %}
                             <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ usuario.id }}" data-name="{{ usuario.nombre }} {{ usuario.apellidos }}">
                                 <i class="bi bi-trash"></i>

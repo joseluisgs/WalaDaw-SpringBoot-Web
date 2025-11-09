@@ -1959,6 +1959,518 @@ function toggleFavorite(productoId) {
 ✅ <a href="/app/miscompras/factura/{{ id }}/pdf">  {# Ruta correcta #}
 ```
 
+## Filtros que NO Existen en Pebble y Soluciones Alternativas
+
+A diferencia de otros motores de plantillas como Thymeleaf o Jinja2, Pebble tiene un conjunto limitado de filtros integrados. Aquí documentamos filtros comunes que **NO existen** en Pebble y cómo solucionarlo.
+
+### ❌ Filtros que NO Existen
+
+#### 1. `truncate` o `truncatewords`
+
+**NO existe en Pebble:**
+```pebble
+{{ texto | truncate(100) }}  {# ❌ NO FUNCIONA #}
+{{ texto | truncatewords(20) }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Usar `slice`** (cortado simple)
+```pebble
+{{ descripcion | slice(0, 100) }}
+{# Corta en el carácter 100, puede cortar palabras #}
+```
+
+**Opción B: Hacer truncate en el Controller**
+```java
+@GetMapping("/productos")
+public String lista(Model model) {
+    List<Product> productos = productoServicio.findAll();
+    productos.forEach(p -> {
+        if (p.getDescripcion() != null && p.getDescripcion().length() > 100) {
+            p.setDescripcion(p.getDescripcion().substring(0, 100) + "...");
+        }
+    });
+    model.addAttribute("productos", productos);
+    return "productos/lista";
+}
+```
+
+**Opción C: Crear filtro personalizado** (ver sección Filtros Personalizados)
+```java
+private static class TruncateFilter implements Filter {
+    @Override
+    public Object apply(Object input, Map<String, Object> args, ...) {
+        if (input == null) return "";
+        String text = input.toString();
+        int length = 100;
+        if (args.containsKey("length")) {
+            length = ((Number) args.get("length")).intValue();
+        }
+        if (text.length() <= length) return text;
+        return text.substring(0, length) + "...";
+    }
+}
+```
+
+#### 2. `striptags` (Eliminar HTML)
+
+**NO existe en Pebble:**
+```pebble
+{{ htmlContent | striptags }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Usar librería en el Controller**
+```java
+import org.jsoup.Jsoup;
+
+@GetMapping("/articulos")
+public String lista(Model model) {
+    List<Articulo> articulos = articuloServicio.findAll();
+    articulos.forEach(a -> {
+        String textoLimpio = Jsoup.parse(a.getContenido()).text();
+        a.setContenidoLimpio(textoLimpio);
+    });
+    model.addAttribute("articulos", articulos);
+    return "articulos/lista";
+}
+```
+
+**Opción B: Crear filtro personalizado con Jsoup**
+```java
+private static class StripTagsFilter implements Filter {
+    @Override
+    public Object apply(Object input, Map<String, Object> args, ...) {
+        if (input == null) return "";
+        return Jsoup.parse(input.toString()).text();
+    }
+}
+```
+
+#### 3. `pluralize` (Pluralización)
+
+**NO existe en Pebble:**
+```pebble
+{{ count }} producto{{ count | pluralize }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Condicional simple**
+```pebble
+{{ count }} producto{% if count != 1 %}s{% endif %}
+{{ usuarios | length }} usuario{% if usuarios | length != 1 %}s{% endif %}
+```
+
+**Opción B: Operador ternario**
+```pebble
+{{ count }} producto{{ count == 1 ? '' : 's' }}
+{{ items | length }} item{{ items | length == 1 ? '' : 's' }}
+```
+
+**Opción C: Función de internacionalización**
+```pebble
+{# En messages.properties:
+   productos.count.singular=producto
+   productos.count.plural=productos
+#}
+{{ count }} {{ count == 1 ? i18n('productos.count.singular') : i18n('productos.count.plural') }}
+```
+
+#### 4. `currency` o `money`
+
+**NO existe en Pebble:**
+```pebble
+{{ precio | currency }}  {# ❌ NO FUNCIONA #}
+{{ total | money('EUR') }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Usar filtro personalizado `formatPrice`** (implementado en el proyecto)
+```pebble
+{{ precio | formatPrice }}
+{# Salida: 99,99 € #}
+```
+
+**Opción B: Usar `numberformat` con sufijo manual**
+```pebble
+{{ precio | numberformat('0.00') }} €
+{# Salida: 99.99 € (sin separador de miles) #}
+```
+
+**Opción C: Formatear en el Controller**
+```java
+import java.text.NumberFormat;
+import java.util.Locale;
+
+@GetMapping("/productos")
+public String lista(Model model) {
+    NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("es", "ES"));
+    List<Product> productos = productoServicio.findAll();
+    productos.forEach(p -> p.setPrecioFormateado(formatter.format(p.getPrecio())));
+    model.addAttribute("productos", productos);
+    return "productos/lista";
+}
+```
+
+#### 5. `slugify` (Convertir a URL-friendly)
+
+**NO existe en Pebble:**
+```pebble
+{{ titulo | slugify }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Crear slug en el Controller**
+```java
+import java.text.Normalizer;
+
+public String slugify(String text) {
+    String normalized = Normalizer.normalize(text, Normalizer.Form.NFD);
+    String slug = normalized.replaceAll("[^\\p{ASCII}]", "")
+                            .toLowerCase()
+                            .replaceAll("[^a-z0-9]+", "-")
+                            .replaceAll("^-|-$", "");
+    return slug;
+}
+
+@GetMapping("/productos")
+public String lista(Model model) {
+    List<Product> productos = productoServicio.findAll();
+    productos.forEach(p -> p.setSlug(slugify(p.getNombre())));
+    model.addAttribute("productos", productos);
+    return "productos/lista";
+}
+```
+
+**Opción B: Generar slug al guardar en la base de datos**
+```java
+@Entity
+public class Product {
+    private String nombre;
+    private String slug;
+    
+    @PrePersist
+    @PreUpdate
+    private void generateSlug() {
+        this.slug = slugify(this.nombre);
+    }
+}
+```
+
+#### 6. `date` con zonas horarias
+
+**Limitado en Pebble:**
+```pebble
+{{ fecha | date('dd/MM/yyyy HH:mm z') }}  {# Formato limitado #}
+{{ fecha | date('dd/MM/yyyy HH:mm', 'Europe/Madrid') }}  {# ❌ NO soporta timezone #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Filtro personalizado `formatDate`** (implementado en el proyecto)
+```pebble
+{{ compra.fechaCompra | formatDate }}
+{# Salida: 15 nov 2025, 14:30 (con locale español) #}
+```
+
+**Opción B: Formatear en el Controller con ZonedDateTime**
+```java
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+
+@GetMapping("/eventos")
+public String lista(Model model) {
+    DateTimeFormatter formatter = DateTimeFormatter
+        .ofPattern("dd MMM yyyy, HH:mm z")
+        .withZone(ZoneId.of("Europe/Madrid"));
+    
+    List<Evento> eventos = eventoServicio.findAll();
+    eventos.forEach(e -> {
+        String fechaFormateada = e.getFecha().format(formatter);
+        e.setFechaFormateada(fechaFormateada);
+    });
+    model.addAttribute("eventos", eventos);
+    return "eventos/lista";
+}
+```
+
+#### 7. `wordcount` (Contar palabras)
+
+**NO existe en Pebble:**
+```pebble
+{{ texto | wordcount }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Calcular en el Controller**
+```java
+@GetMapping("/articulos")
+public String lista(Model model) {
+    List<Articulo> articulos = articuloServicio.findAll();
+    articulos.forEach(a -> {
+        int palabras = a.getContenido().split("\\s+").length;
+        a.setNumeroPalabras(palabras);
+    });
+    model.addAttribute("articulos", articulos);
+    return "articulos/lista";
+}
+```
+
+**Opción B: Crear filtro personalizado**
+```java
+private static class WordCountFilter implements Filter {
+    @Override
+    public Object apply(Object input, Map<String, Object> args, ...) {
+        if (input == null) return 0;
+        String text = input.toString().trim();
+        if (text.isEmpty()) return 0;
+        return text.split("\\s+").length;
+    }
+}
+```
+
+```pebble
+{# Usar con filtro personalizado #}
+{{ articulo.contenido | wordcount }} palabras
+```
+
+#### 8. `random` (Elemento aleatorio)
+
+**NO existe en Pebble:**
+```pebble
+{{ productos | random }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Seleccionar aleatorio en el Controller**
+```java
+import java.util.Random;
+
+@GetMapping("/")
+public String index(Model model) {
+    List<Product> productos = productoServicio.findAll();
+    
+    if (!productos.isEmpty()) {
+        Random random = new Random();
+        Product productoAleatorio = productos.get(random.nextInt(productos.size()));
+        model.addAttribute("productoDestacado", productoAleatorio);
+    }
+    
+    return "index";
+}
+```
+
+**Opción B: Query aleatoria en la base de datos**
+```java
+public interface ProductRepository extends JpaRepository<Product, Long> {
+    @Query(value = "SELECT * FROM products ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Product findRandomProduct();
+}
+```
+
+#### 9. `sha1`, `sha256`, `md5` (Hashing)
+
+**NO existe en Pebble:**
+```pebble
+{{ email | md5 }}  {# ❌ NO FUNCIONA #}
+{{ password | sha256 }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**IMPORTANTE: ⚠️ Nunca hashear en la vista. Siempre en el backend.**
+
+```java
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import java.security.MessageDigest;
+
+// Para passwords (BCrypt)
+@Autowired
+private BCryptPasswordEncoder passwordEncoder;
+
+String hashedPassword = passwordEncoder.encode(plainPassword);
+
+// Para otros casos (MD5, SHA)
+public String md5(String input) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] hash = md.digest(input.getBytes());
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
+    } catch (Exception e) {
+        return null;
+    }
+}
+```
+
+#### 10. `default_if_none` (Similar a `default` pero solo para null)
+
+**Pebble tiene `default` pero funciona diferente:**
+```pebble
+{# default funciona para null Y empty string #}
+{{ variable | default('valor') }}
+
+{# ❌ NO existe: default_if_none (solo para null) #}
+{{ variable | default_if_none('valor') }}  {# ❌ NO FUNCIONA #}
+```
+
+**✅ Soluciones:**
+
+**Opción A: Usar condicional `is not null`**
+```pebble
+{% if variable is not null %}
+    {{ variable }}
+{% else %}
+    valor por defecto
+{% endif %}
+```
+
+**Opción B: Usar `default` (funciona para null y empty)**
+```pebble
+{{ variable | default('valor') }}
+{# Funciona para null, "", y colecciones vacías #}
+```
+
+### Resumen de Alternativas
+
+| Filtro Faltante | Solución Recomendada | Dificultad |
+|-----------------|---------------------|------------|
+| `truncate` | Usar `slice` o filtro personalizado | ⭐ Fácil |
+| `striptags` | Jsoup en Controller o filtro personalizado | ⭐⭐ Media |
+| `pluralize` | Operador ternario `? :` | ⭐ Fácil |
+| `currency` | Filtro personalizado `formatPrice` | ⭐⭐ Media |
+| `slugify` | Generar en Controller o @PrePersist | ⭐⭐ Media |
+| `date` con timezone | Filtro personalizado o formatear en Controller | ⭐⭐ Media |
+| `wordcount` | Calcular en Controller | ⭐ Fácil |
+| `random` | Seleccionar en Controller | ⭐ Fácil |
+| `sha1/md5` | **Siempre en backend** | ⭐ Fácil |
+| `default_if_none` | Usar `is not null` o `default` | ⭐ Fácil |
+
+### Filosofía de Pebble
+
+Pebble sigue el principio de **"Lógica en el Controller, Presentación en la Vista"**:
+
+❌ **NO hacer en la vista:**
+- Lógica de negocio compleja
+- Operaciones de base de datos
+- Transformaciones pesadas de datos
+- Cálculos complicados
+
+✅ **SÍ hacer en la vista:**
+- Formateo simple de presentación
+- Condicionales de visualización
+- Iteración sobre datos ya preparados
+- Aplicación de estilos CSS condicionales
+
+### Cuándo Crear Filtros Personalizados
+
+**✅ Crear filtro personalizado cuando:**
+- El formato es específico de la aplicación (ej: `formatPrice` con símbolo €)
+- Se usa frecuentemente en múltiples vistas
+- La transformación es pura presentación
+- No requiere acceso a servicios o base de datos
+
+**❌ NO crear filtro personalizado cuando:**
+- Requiere lógica de negocio
+- Necesita acceso a la base de datos
+- Se usa solo en una o dos vistas (hacerlo en el Controller)
+- Puede comprometer la seguridad
+
+### Mejores Prácticas
+
+#### 1. Preparar Datos en el Controller
+
+```java
+// ✅ BUENO: Preparar datos con toda la información necesaria
+@GetMapping("/productos")
+public String lista(Model model) {
+    List<Product> productos = productoServicio.findAll();
+    productos.forEach(p -> {
+        p.setPrecioFormateado(formatPrice(p.getPrecio()));
+        p.setDescripcionCorta(truncate(p.getDescripcion(), 100));
+        p.setFechaFormateada(formatDate(p.getFechaCreacion()));
+    });
+    model.addAttribute("productos", productos);
+    return "productos/lista";
+}
+
+// ❌ MALO: Dejar todo para la vista
+@GetMapping("/productos")
+public String lista(Model model) {
+    model.addAttribute("productos", productoServicio.findAll());
+    return "productos/lista";
+}
+```
+
+#### 2. Usar DTOs para Datos Complejos
+
+```java
+// DTO con datos ya formateados
+public class ProductoListadoDTO {
+    private Long id;
+    private String nombre;
+    private String precioFormateado;      // Ya formateado
+    private String descripcionCorta;       // Ya truncada
+    private String imagenUrl;
+    private boolean disponible;
+    
+    public static ProductoListadoDTO fromEntity(Product p) {
+        ProductoListadoDTO dto = new ProductoListadoDTO();
+        dto.setId(p.getId());
+        dto.setNombre(p.getNombre());
+        dto.setPrecioFormateado(formatPrice(p.getPrecio()));
+        dto.setDescripcionCorta(truncate(p.getDescripcion(), 100));
+        dto.setImagenUrl(p.getImagenOrDefault());
+        dto.setDisponible(p.getCompra() == null);
+        return dto;
+    }
+}
+
+// En el Controller
+@GetMapping("/productos")
+public String lista(Model model) {
+    List<ProductoListadoDTO> productos = productoServicio.findAll()
+        .stream()
+        .map(ProductoListadoDTO::fromEntity)
+        .toList();
+    model.addAttribute("productos", productos);
+    return "productos/lista";
+}
+
+// En la vista - datos ya listos
+{{ producto.precioFormateado }}
+{{ producto.descripcionCorta }}
+```
+
+#### 3. Documentar Filtros Personalizados
+
+```java
+/**
+ * Filtro personalizado para formatear precios en formato español.
+ * 
+ * Uso: {{ precio | formatPrice }}
+ * Entrada: Number (Double, Float, Integer)
+ * Salida: String con formato "1.234,56 €"
+ * 
+ * Ejemplos:
+ *   99.99 -> "99,99 €"
+ *   1599.50 -> "1.599,50 €"
+ *   null -> "0,00 €"
+ */
+private static class FormatPriceFilter implements Filter { ... }
+```
+
 ---
 
 **Actualizado con ejemplos reales:** Noviembre 2025  

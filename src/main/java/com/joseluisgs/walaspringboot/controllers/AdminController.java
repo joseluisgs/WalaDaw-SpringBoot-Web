@@ -8,7 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin")
@@ -304,5 +306,57 @@ public class AdminController {
         model.addAttribute("usuarios", usuarioServicio.findAll());
         
         return "admin/ventas";
+    }
+
+    @GetMapping("/usuarios/{id}")
+    public String detalleUsuario(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            var usuario = usuarioServicio.findById(id);
+            
+            if (usuario == null) {
+                redirectAttributes.addFlashAttribute("error", "Usuario no encontrado.");
+                return "redirect:/admin/usuarios";
+            }
+            
+            // Obtener productos del usuario
+            long productosActivos = productoServicio.countByPropietarioActive(usuario);
+            long comprasRealizadas = compraServicio.countByPropietario(usuario);
+            
+            // Obtener lista de productos del usuario
+            var productosUsuario = productoServicio.productosDeUnPropietario(usuario);
+            
+            model.addAttribute("usuario", usuario);
+            model.addAttribute("productosActivos", productosActivos);
+            model.addAttribute("comprasRealizadas", comprasRealizadas);
+            model.addAttribute("productosUsuario", productosUsuario);
+            
+            return "admin/detalle-usuario";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cargar el usuario: " + e.getMessage());
+            return "redirect:/admin/usuarios";
+        }
+    }
+
+    @GetMapping("/productos/{id}")
+    public String detalleProducto(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            var producto = productoServicio.findById(id);
+            
+            if (producto == null) {
+                redirectAttributes.addFlashAttribute("error", "Producto no encontrado.");
+                return "redirect:/admin/productos";
+            }
+            
+            // Verificar si ha sido vendido
+            boolean vendido = productoServicio.hasBeenSold(producto);
+            
+            model.addAttribute("producto", producto);
+            model.addAttribute("vendido", vendido);
+            
+            return "admin/detalle-producto";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cargar el producto: " + e.getMessage());
+            return "redirect:/admin/productos";
+        }
     }
 }
