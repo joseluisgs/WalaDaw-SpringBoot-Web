@@ -35,6 +35,10 @@ public class Product {
 
     @Column(name = "reservado", nullable = false)
     private boolean reservado = false;
+
+    @Column(name = "reserva_expira")
+    private LocalDateTime reservaExpira;
+
     @ManyToOne
     private Purchase compra;
     @Column(name = "deleted", nullable = false)
@@ -235,5 +239,13 @@ public class Product {
 
     public void setReservado(boolean reservado) {
         this.reservado = reservado;
+    }
+
+    public LocalDateTime getReservaExpira() {
+        return reservaExpira;
+    }
+
+    public void setReservaExpira(LocalDateTime reservaExpira) {
+        this.reservaExpira = reservaExpira;
     }
 }

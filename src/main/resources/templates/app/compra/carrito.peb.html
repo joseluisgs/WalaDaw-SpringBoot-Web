@@ -6,9 +6,15 @@
 {% include "fragments/navbar" %}
 
 <div class="container mt-5 pt-5">
+
     {% if carrito is null or carrito is empty %}
     <div class="row justify-content-center">
         <div class="col-md-8">
+            {% if compraError %}
+            <div class="alert alert-danger" role="alert">
+                {{ compraError }}
+            </div>
+            {% endif %}
             <div class="alert alert-info text-center" role="alert">
                 <h2>Aún no ha seleccionado ningún producto para comprar</h2>
                 <a href="/" class="btn btn-primary mt-3">Ir a comprar</a>
@@ -19,44 +25,49 @@
     <div class="row justify-content-center">
         <div class="col-md-10">
             <h2 class="mb-4">Carrito de Compra</h2>
+            {% if compraError %}
+            <div class="alert alert-danger" role="alert">
+                {{ compraError }}
+            </div>
+            {% endif %}
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th class="text-center">Precio</th>
-                            <th></th>
-                        </tr>
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Precio</th>
+                        <th></th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {% for producto in carrito %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ producto.imagenOrDefault }}" 
-                                         class="rounded me-3" style="width: 150px; height: 150px; object-fit: cover;" alt="{{ producto.nombre }}">
-                                    <div>
-                                        <h5>{{ producto.nombre }}</h5>
-                                        <p class="text-muted mb-0">de {{ producto.propietario.email }}</p>
-                                    </div>
+                    {% for producto in carrito %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ producto.imagenOrDefault }}"
+                                     class="rounded me-3" style="width: 150px; height: 150px; object-fit: cover;" alt="{{ producto.nombre }}">
+                                <div>
+                                    <h5>{{ producto.nombre }}</h5>
+                                    <p class="text-muted mb-0">de {{ producto.propietario.email }}</p>
                                 </div>
-                            </td>
-                            <td class="text-center align-middle">
-                                <h5 class="text-primary">{{ producto.precio | formatPrice }}</h5>
-                            </td>
-                            <td class="text-center align-middle">
-                                <a href="/app/carrito/eliminar/{{ producto.id }}" class="btn btn-danger btn-sm">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                            </div>
+                        </td>
+                        <td class="text-center align-middle">
+                            <h5 class="text-primary">{{ producto.precio | formatPrice }}</h5>
+                        </td>
+                        <td class="text-center align-middle">
+                            <a href="/app/carrito/eliminar/{{ producto.id }}" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
                     </tbody>
                     <tfoot>
-                        <tr>
-                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
-                            <td class="text-center"><h4 class="text-primary">{{ total_carrito | formatPrice }}</h4></td>
-                        </tr>
+                    <tr>
+                        <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                        <td class="text-center"><h4 class="text-primary">{{ total_carrito | formatPrice }}</h4></td>
+                    </tr>
                     </tfoot>
                 </table>
             </div>

@@ -12,11 +12,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.List;
 
 @EnableConfigurationProperties(StorageProperties.class)
 @EnableCaching
+@EnableScheduling
 @SpringBootApplication
 public class WalaSpringBootApplication {
 

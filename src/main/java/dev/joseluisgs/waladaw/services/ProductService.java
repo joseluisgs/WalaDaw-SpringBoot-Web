@@ -6,23 +6,36 @@ import dev.joseluisgs.waladaw.models.Purchase;
 import dev.joseluisgs.waladaw.models.User;
 import dev.joseluisgs.waladaw.repositories.ProductRepository;
 import dev.joseluisgs.waladaw.storage.StorageService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ProductService {
-    @Autowired
+
+    @Value("${producto.reserva.minutos:1}")
+    private int minutosReserva;
+
+    final
     ProductRepository repositorio;
 
-    @Autowired
+    final
     StorageService storageService;
+
+    @Autowired
+    public ProductService(ProductRepository repositorio, StorageService storageService) {
+        this.repositorio = repositorio;
+        this.storageService = storageService;
+    }
 
     @CacheEvict(value = "productos", allEntries = true)
     public Product insertar(Product p) {
@@ -168,11 +181,31 @@ public class ProductService {
         }
     }
 
-    public void marcarComoReservado(Long id, boolean b) {
+    public void marcarComoReservado(Long id, boolean marcado) {
         Product product = findById(id);
-        if (product != null) {
-            product.setReservado(b);
+        if (product != null && marcado) {
+            product.setReservado(marcado);
+            product.setReservaExpira(LocalDateTime.now().plusMinutes(minutosReserva));
             repositorio.save(product);
         }
+        else if (product != null) {
+            product.setReservado(false);
+            product.setReservaExpira(null);
+            repositorio.save(product);
+        }
+    }
+
+    @Transactional
+    public boolean marcarComoReservado(Long id) {
+        Product producto = repositorio.findById(id).orElse(null);
+        if (producto == null) return false;
+        boolean vendido = producto.getCompra() != null;
+        if (producto.isReservado() || vendido || !producto.isActive()) {
+            return false;
+        }
+        producto.setReservado(true);
+        producto.setReservaExpira(LocalDateTime.now().plusMinutes(minutosReserva));
+        repositorio.save(producto);
+        return true;
     }
 }

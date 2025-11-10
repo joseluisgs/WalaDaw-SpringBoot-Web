@@ -81,4 +81,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) AND p.categoria = :categoria AND p.propietario.id = :propietarioId AND p.deleted = false ORDER BY p.id DESC")
     Page<Product> findByAllFiltersActivePaginated(@Param("nombre") String nombre, @Param("categoria") ProductCategory categoria, @Param("propietarioId") Long propietarioId, Pageable pageable);
+
+    List<Product> findByReservadoTrue();
 }

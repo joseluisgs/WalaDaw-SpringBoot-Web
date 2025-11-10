@@ -20,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -110,21 +111,23 @@ public class PurchaseController {
     // AÑadimos un producto al carrito
     @GetMapping("/carrito/add/{id}")
     public String addCarrito(Model model, @PathVariable Long id) {
-        // Sacamos el carrito de la sesión
         List<Long> contenido = (List<Long>) session.getAttribute("carrito");
-        // Si es nulo, lo creamos
         if (contenido == null)
             contenido = new ArrayList<>();
-        // Si no esta el producto lo añadimos. Esto es porque no podemos cambiar la cantidad
+
         if (!contenido.contains(id)) {
-            contenido.add(id);
-            // Lo marcamos como reservado
-            productoServicio.marcarComoReservado(id, true);
+            // Realiza la reserva atómica, SOLO desde el servicio
+            boolean reservado = productoServicio.marcarComoReservado(id);
+            if (reservado) {
+                contenido.add(id);
+            } else {
+                session.setAttribute("compra_error", "El producto ya está reservado o vendido, no es posible añadirlo.");
+                return "redirect:/app/carrito";
+            }
         }
-        // Almacenamos en la sesión el carrito y el número de items
+
         session.setAttribute("carrito", contenido);
         session.setAttribute("items_carrito", contenido.size());
-        // Volvemos a la página del carrito
         return "redirect:/app/carrito";
     }
 
@@ -175,6 +178,17 @@ public class PurchaseController {
 
         // Obtenemos la lista de productos
         List<Product> productos = productosCarrito();
+
+        // Validación de reservas: solo se puede comprar si siguen reservados y la reserva no ha caducado
+        LocalDateTime now = LocalDateTime.now();
+        for (Product producto : productos) {
+            if (!producto.isReservado() || producto.getReservaExpira() == null || producto.getReservaExpira().isBefore(now)) {
+                // Puedes notificar al usuario el problema, aquí solo redirigimos por ejemplo
+                session.setAttribute("compra_error", "El producto '" + producto.getNombre() + "' ya no está disponible. Su reserva ha caducado o ha sido vendido.");
+                return "redirect:/app/carrito"; // O a una página de error específica
+            }
+        }
+
         // Los insertamos en la compra
         Purchase c = compraServicio.insertar(new Purchase(), usuario);
         // Sitaxis de java nueva por cada producto p, ejecutamos compra servicio y asociamos p a la compra c
@@ -182,6 +196,11 @@ public class PurchaseController {
         // Elimanos de la sesión el carrito
         session.removeAttribute("carrito");
         session.removeAttribute("items_carrito");
+
+        // Elimina la reserva de los productos comprados
+        productos.forEach(p -> {
+            productoServicio.marcarComoReservado(p.getId(), false);
+        });
 
         // Enviar email de confirmación de manera asíncrona para no bloquear
         new Thread(() -> {

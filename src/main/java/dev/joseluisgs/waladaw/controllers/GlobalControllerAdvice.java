@@ -12,6 +12,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // Importamos seguridad
@@ -84,6 +85,13 @@ public class GlobalControllerAdvice {
     public String getCsrfHeaderName(HttpServletRequest request) {
         CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
         return csrfToken != null ? csrfToken.getHeaderName() : "X-CSRF-TOKEN";
+    }
+
+    @ModelAttribute("carrito")
+    public List<Product> productosCarrito(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        List<Long> contenido = (List<Long>) session.getAttribute("carrito");
+        return (contenido == null) ? new ArrayList<>() : productService.variosPorId(contenido);
     }
 
     // ⭐ SHOPPING CART INFORMATION - FOR ALL PAGES ⭐
@@ -165,5 +173,19 @@ public class GlobalControllerAdvice {
                 java.time.format.TextStyle.FULL,
                 new java.util.Locale("es", "ES")
         );
+    }
+
+    @ModelAttribute("compraError")
+    public String getCompraError(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            String compraError = (String) session.getAttribute("compra_error");
+            // Quitar el error tras mostrarlo (flash attribute)
+            if (compraError != null) {
+                session.removeAttribute("compra_error");
+            }
+            return compraError;
+        }
+        return null;
     }
 }
