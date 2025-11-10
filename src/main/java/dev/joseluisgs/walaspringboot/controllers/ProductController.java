@@ -23,16 +23,23 @@ import java.util.List;
 public class ProductController {
 
     // Servicio de producto
-    @Autowired
+    final
     ProductService productoServicio;
 
     // Servicio de usuario
-    @Autowired
+    final
     UserService usuarioServicio;
     // Servicio de almacenamiento
-    @Autowired
+    final
     StorageService storageService;
     private User usuario;
+
+    @Autowired
+    public ProductController(ProductService productoServicio, UserService usuarioServicio, StorageService storageService) {
+        this.productoServicio = productoServicio;
+        this.usuarioServicio = usuarioServicio;
+        this.storageService = storageService;
+    }
 
     // Inyectamos en el modelo automáticamente la lista de mis productos
     @ModelAttribute("misproductos")
