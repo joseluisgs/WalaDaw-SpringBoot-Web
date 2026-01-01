@@ -108,6 +108,14 @@ docker-compose down
 ## ⚒️ Diagrama
 
 ```mermaid
+Ese error ocurre porque GitHub (y algunos otros visores de Markdown) son muy estrictos con la sintaxis de Mermaid. El mensaje "Cannot read properties of undefined (reading 'annotations')" suele aparecer cuando hay caracteres especiales, comentarios mal formados o una dirección de flecha que el motor de renderizado no reconoce correctamente.
+
+Para solucionarlo, he simplificado las relaciones y eliminado los comentarios internos de Mermaid que a veces causan conflictos en GitHub.
+
+Aquí tienes la versión optimizada para GitHub:
+
+Fragmento de código
+
 classDiagram
     direction TB
 
@@ -115,16 +123,13 @@ classDiagram
         +long id
         +String nombre
         +String apellidos
-        +String avatar
-        +Date fechaAlta
         +String email
-        +String password
         +Role rol
         +Boolean deleted
     }
 
-    <<enumeration>> Role
     class Role {
+        <<enumeration>>
         USER
         ADMIN
     }
@@ -133,18 +138,13 @@ classDiagram
         +long id
         +String nombre
         +float precio
-        +String imagen
-        +String descripcion
         +ProductCategory categoria
         +boolean reservado
-        +LocalDateTime reservaExpira
         +Boolean deleted
-        +Long views
-        +getImagenOrDefault()
     }
 
-    <<enumeration>> ProductCategory
     class ProductCategory {
+        <<enumeration>>
         SMARTPHONES
         LAPTOPS
         AUDIO
@@ -156,14 +156,11 @@ classDiagram
         +long id
         +Date fechaCompra
         +Double total
-        +calculateTotal()
-        +addProduct(Product)
     }
 
     class CarritoItem {
         +long id
         +int cantidad
-        +getSubtotal()
     }
 
     class Favorite {
@@ -175,24 +172,22 @@ classDiagram
         +long id
         +int puntuacion
         +String comentario
-        +Date fechaCreacion
     }
 
-    %% RELACIONES
-    User "*" -- "1" Role : tiene
+    User --> Role
     User "1" -- "*" Product : propietario
-    User "1" -- "*" Purchase : realiza (propietario)
+    User "1" -- "*" Purchase : realiza
     User "1" -- "*" CarritoItem : gestiona
     User "1" -- "*" Favorite : marca
     User "1" -- "*" Rating : escribe
 
-    Product "*" -- "1" ProductCategory : categorizado
-    Product "*" -- "0..1" Purchase : pertenece a (compra)
-    Product "1" -- "*" CarritoItem : en línea de carrito
-    Product "1" -- "*" Favorite : es favorito de
-    Product "1" -- "*" Rating : valorado con
+    Product --> ProductCategory
+    Product "*" -- "0..1" Purchase : pertenece
+    Product "1" -- "*" CarritoItem : producto
+    Product "1" -- "*" Favorite : favorito
+    Product "1" -- "*" Rating : valorado
 
-    Purchase "1" --> "*" Product : productos (List)
+    Purchase "1" --> "*" Product : contiene
 
 ```
 
